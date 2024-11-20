@@ -67,6 +67,27 @@
     {% if view == 'dashboard' %}
     <div class="card shadow-lg p-4 mt-4">
         <h2 class="text-center">Attendee Details for Your Events</h2>
+
+
+        <div class="mb-3 d-flex justify-content-between">
+            <!-- Date Filter -->
+            <div>
+                <label for="dateFilter" class="form-label">Filter by Date:</label>
+                <input type="date" id="dateFilter" class="form-control" style="max-width: 200px;">
+            </div>
+        
+            <!-- Event Title Dropdown Filter -->
+            <div>
+                <label for="eventFilter" class="form-label">Filter by Event:</label>
+                <select id="eventFilter" class="form-select" style="max-width: 200px;">
+                    <option value="">All Events</option>
+                    {% for event_title in unique_event_titles %}
+                    <option value="{{ event_title }}">{{ event_title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <span></span>
         <table id="attendeeTable" class="table table-striped table-bordered">
             <thead>
                 <tr>

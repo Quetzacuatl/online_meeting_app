@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\vanbopi\Documents\Python Scripts\my_event_app\env
+set VIRTUAL_ENV=C:\Users\PC\Documents\Programmeren\Python\online_meeting_app\env
 
 if not defined PROMPT set PROMPT=$P$G
 

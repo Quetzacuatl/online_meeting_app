@@ -86,6 +86,9 @@ def dashboard():
     created_events = Event.query.filter_by(user_id=current_user.id).all()
     attending_events = Event.query.join(Attendee).filter(Attendee.user_id == current_user.id).all()
 
+    # Generate unique event titles
+    unique_event_titles = {event.title for event in created_events}
+
     # Prepare data for the table
     table_data = []
     for event in created_events:
@@ -100,7 +103,7 @@ def dashboard():
                 "payment_comment": f"{event.id} + {attendee.user.email}"
             })
 
-    return render_template("dashboard.html", view=view, created_events=created_events, attending_events=attending_events, table_data=table_data)
+    return render_template("dashboard.html", view=view, created_events=created_events, attending_events=attending_events, table_data=table_data, unique_event_titles=unique_event_titles)
 
 
 @app.route("/edit_profile", methods=["POST"])
