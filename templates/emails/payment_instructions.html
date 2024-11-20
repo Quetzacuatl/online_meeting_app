@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <p>Hello {{ attendee.name }},</p>
+    <p>You have registered for the event "{{ event.title }}" on {{ event.date.strftime('%Y-%m-%d') }}.</p>
+    <p>To confirm your spot, please transfer ${{ event.price }} to the following bank account:</p>
+    <p><strong>Account Details:</strong></p>
+    <p>Bank: Example Bank<br>Account Number: 123456789<br>Reference: {{ attendee.id }}</p>
+    <p>Once your payment is verified, you will receive the meeting link.</p>
+</body>
+</html>
+
+
+Your Registration request for {event_title} Online meeting {event_date}
+
+Dear {user}
+
+I'm excited to invite you to my online meeting {event_title} on {event_date}
+I look forward to share the meeting link, with my meeting slides and instructions upon payment of {event_price}€ to IBAN {host_iban}. 
+
+After payment is received, your attendance will be confirmed by email and appear on the website in your dashboard. 
+If you have any questions , don't hesitate to contact me. 
+
+With best regards,
+Pieter van Bogaert
+0032 485 80 98 59
+{host_email}

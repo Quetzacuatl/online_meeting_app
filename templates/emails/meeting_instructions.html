@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <p>Hello {{ attendee.name }},</p>
+    <p>Your payment has been verified for the event "{{ event.title }}" on {{ event.date.strftime('%Y-%m-%d') }}.</p>
+    <p>Here is your meeting link: <a href="{{ event.meeting_link }}">{{ event.meeting_link }}</a></p>
+</body>
+</html>
+
+
+Confirmation of payment for {event_title} Online meeting {event_date}
+
+Dear {user}
+
+Thank you very much for your interest. Hereby I confirm your payment. 
+
+Meeting link :  {event_meeting_url}
+Attachments : 

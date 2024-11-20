@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}All Events{% endblock %}
+
+{% block content %}
+<h1 class="text-center mb-4">All Events</h1>
+<div class="row row-cols-1 row-cols-md-3 g-4">
+
+    {% for event in events %}
+    <div class="col" id="event-{{ event.id }}">
+        <div class="card h-100 shadow">
+            <div class="card-body">
+                <h5 class="card-title">{{ event.title }}</h5>
+                <p class="card-text">{{ event.description }}</p>
+                <p class="card-text"><small>Date: {{ event.date }}</small></p>
+                <p class="card-text"><small>Price: {{ event.price }} {{event.currency}}</small></p>
+                <p class="card-text"><small>Max Attendees: {{ event.max_attendees }}</small></p>
+            </div>
+            <div class="card-footer text-center">
+                <div class="card-footer text-center">
+                    <button class="btn btn-success"
+                        onclick="confirmAttendance('{{ url_for('attend_event', event_id=event.id) }}')">Attend</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

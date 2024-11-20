@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Attendees{% endblock %}
+
+{% block content %}
+<h2>Attendees for "{{ event.title }}"</h2>
+{% if event.attendees %}
+    <ul>
+        {% for attendee in event.attendees %}
+            <li>
+                <strong>{{ attendee.name }}</strong> - {{ attendee.email }}
+                {% if attendee.paid %}
+                    (Paid)
+                {% else %}
+                    <a href="{{ url_for('send_payment_email', attendee_id=attendee.id) }}">Send Payment Email</a>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No attendees yet.</p>
+{% endif %}
+{% endblock %}

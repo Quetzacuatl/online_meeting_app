@@ -1,0 +1,73 @@
+
+
+
+
+{% block content %}
+
+<div class="mb-3">
+    <label for="title" class="form-label">Event Title</label>
+    <input type="text" class="form-control" id="title" name="title" placeholder="Enter event title" required>
+</div>
+<div class="mb-3">
+    <label for="description" class="form-label">Description</label>
+    <textarea class="form-control" id="description" name="description" placeholder="Enter event description" rows="3" required></textarea>
+</div>
+<div class="mb-3">
+    <label for="date" class="form-label">Date</label>
+    <input type="date" class="form-control" id="date" name="date" required>
+</div>
+<div class="mb-3">
+    <label for="hour" class="form-label">Hour</label>
+    <input type="time" class="form-control" id="hour" name="hour" required>
+</div>
+<div class="mb-3">
+    <label for="timezone" class="form-label">Timezone</label>
+    <select class="form-control" id="timezone" name="timezone" required>
+        <option value="UTC">UTC</option>
+        <option value="Europe/Brussels">Europe/Brussels</option>
+        <option value="America/New_York">America/New_York</option>
+        <option value="Asia/Tokyo">Asia/Tokyo</option>
+    </select>
+</div>
+<div class="mb-3">
+    <label for="event_price" class="form-label">Event Price</label>
+    <input type="number" class="form-control" id="event_price" name="event_price" placeholder="Enter event price" required>
+</div>
+<div class="mb-3">
+    <label for="event_currency" class="form-label">Event Currency</label>
+    <input type="text" class="form-control" id="event_currency" name="event_currency" placeholder="Enter event currency" required>
+</div>
+<div class="mb-3">
+    <label for="event_paymentaddress" class="form-label">Payment Address</label>
+    <textarea class="form-control" id="event_paymentaddress" name="event_paymentaddress" placeholder="Enter payment address"
+        rows="1" required>{{ current_user.iban }}</textarea>
+</div>
+<div class="mb-3">
+    <label for="max_attendees" class="form-label">Max Attendees</label>
+    <input type="number" class="form-control" id="max_attendees" name="max_attendees" placeholder="Enter max attendees" required>
+</div>
+<div class="mb-3">
+    <label for="payment_email_title" class="form-label">Payment Instructions Email - Title</label>
+    <input type="text" class="form-control" id="payment_email_title" name="payment_email_title"
+        value="{{ current_user.payment_email_title }}" required>
+</div>
+<div class="mb-3">
+    <label for="payment_email_body" class="form-label">Payment Instructions Email - Body</label>
+    <textarea class="form-control" id="payment_email_body" name="payment_email_body" rows="4" required>{{ current_user.payment_email_body }}</textarea>
+</div>
+<div class="mb-3">
+    <label for="confirmation_email_title" class="form-label">Confirmation Email - Title</label>
+    <input type="text" class="form-control" id="confirmation_email_title" name="confirmation_email_title"
+        value="{{ current_user.confirmation_email_title }}" required>
+</div>
+<div class="mb-3">
+    <label for="confirmation_email_body" class="form-label">Confirmation Email - Body</label>
+    <textarea class="form-control" id="confirmation_email_body" name="confirmation_email_body" rows="4" required>{{ current_user.confirmation_email_body }}</textarea>
+</div>
+<div class="mb-3">
+    <label for="event_meeting_link" class="form-label">Event Meeting Link</label>
+    <input type="url" class="form-control" id="event_meeting_link" name="event_meeting_link" placeholder="Enter meeting URL (e.g., Google Meet, Skype)" required>
+</div>
+
+
+{% endblock %}
