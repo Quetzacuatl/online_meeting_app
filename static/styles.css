@@ -1,10 +1,11 @@
 /* General Body Styling */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f9;
+    background-color: #f4f4f9; /* #f8f9fa; */
     margin: 0;
     padding: 0;
 }
+
 
 /* Navbar Styling */
 .navbar-dark .navbar-nav .nav-link {
@@ -18,7 +19,6 @@ body {
 
 /* Search Bar Container */
 .search-container {
-    background-color: #f4f4f9;
     color: white;
     padding: 15px 0;
 }
@@ -27,17 +27,48 @@ body {
     max-width: 500px;
 }
 
+h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    margin-top: 50px;
+}
+
 /* Card Styling */
 .card {
     border: none;
     border-radius: 8px;
     overflow: hidden;
+
+    border-radius: 10px;
+    background: white;
+    padding: 20px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    padding-top: 10px; /* Prevent margin collapse */
 }
+
 
 .card-title {
     font-size: 1.25rem;
     font-weight: bold;
     color: #333;
+}
+
+.card h2 {
+    color: #333;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    margin-top:20px;
+    padding-top: 20px;
+}
+
+
+.card h3 {
+    color: #333;
+    font-weight: bold;
+    margin-bottom: 20px;
 }
 
 .card-text {
@@ -54,32 +85,7 @@ body {
     width: 100%;
 }
 
-.flash-message {
-    color: red;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-/* General Form Styling */
-body {
-    background-color: #f8f9fa;
-    font-family: Arial, sans-serif;
-}
-
-.card {
-    border-radius: 10px;
-    background: white;
-    padding: 20px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.card h2 {
-    color: #333;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
+/* FORM STYLING */ 
 .form-label {
     font-weight: bold;
     color: #555;
@@ -96,47 +102,10 @@ body {
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
 }
 
-.btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-    font-size: 16px;
-    padding: 10px;
-    border-radius: 5px;
-}
 
-.btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
-}
 
-.card {
-    border-radius: 10px;
-    background: white;
-    padding: 20px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-}
 
-.card h3 {
-    color: #333;
-    font-weight: bold;
-    margin-bottom: 20px;
-}
-
-.form-label {
-    font-weight: bold;
-    color: #555;
-}
-
-.form-control {
-    border-radius: 5px;
-    padding: 10px;
-    font-size: 14px;
-}
-
-.form-control:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
-}
+/* BUTTON STYLING */
 
 .btn-primary {
     background-color: #007bff;
@@ -150,8 +119,17 @@ body {
     background-color: #0056b3;
     border-color: #0056b3;
 }
+
+
+.btn-disabled {
+    background-color: #6c757d;
+    color: #fff;
+    cursor: not-allowed;
+}
+
 
 /* Flash Message Styles */
+
 .flash-message {
     position: relative;
     margin-bottom: 15px;
@@ -186,19 +164,76 @@ body {
 }
 
 
-.card {
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-}
+
 .text-center {
     text-align: center;
 }
-h2 {
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-bottom: 20px;
+
+
+/*TABLE STYLING */
+/* Ensure table header has a border */
+.table thead th {
+    border-top: 2px solid #dee2e6; /* Add a visible top border */
+    border-bottom: 2px solid #dee2e6; /* Consistent bottom border */
+    background-color: #f8f9fa; /* Optional: Light gray background for headers */
+    text-align: center; /* Center align text */
+    padding: 10px; /* Adjust padding */
 }
+
+/* Ensure all table cells have borders */
+.table td, 
+.table th {
+    border: 1px solid #dee2e6; /* Add borders around cells */
+}
+
+/* Optional: Customize hover effect for rows */
+.table tbody tr:hover {
+    background-color: #f1f3f5; /* Subtle hover effect */
+}
+
+/* Make the table look more structured */
 .table {
-    margin-top: 20px;
+    border-collapse: collapse; /* Ensure borders don't overlap */
+    width: 100%; /* Full width */
+    margin: 20px 0; /* Add spacing above and below the table */
 }
+
+.spacing-controls {
+    margin-bottom: 20px; /* Adjust this value for more/less spacing */
+  }
+
+  /* DataTable Controls Spacing */
+.dataTables_wrapper .dataTables_length {
+    float: left;
+    margin-bottom: 20px; /* Adjust for more space */
+}
+
+.dataTables_wrapper .dataTables_filter {
+    float: right;
+    margin-bottom: 20px; /* Adjust for more space */
+}
+
+/* Clearfix for Flex Alignment */
+.dataTables_wrapper .dataTables_length, 
+.dataTables_wrapper .dataTables_filter {
+    clear: both;
+}
+
+
+@media (max-width: 768px) {
+    /* Hide specific columns for smaller screens */
+    th:nth-child(3), td:nth-child(3),  /* Google Meet URL */
+    th:nth-child(7), td:nth-child(7), /* Payment Comment */
+    th:nth-child(8), td:nth-child(8)  /* Payment Confirmed */
+    {
+        display: none;
+    }
+
+    /* Ensure table cells wrap content */
+    td {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+}
+

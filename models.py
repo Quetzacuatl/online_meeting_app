@@ -37,6 +37,7 @@ class Event(db.Model):
     date = db.Column(db.DateTime, nullable=False)
     price = db.Column(db.Integer, nullable=False)
     currency = db.Column(db.String(10), nullable=False)
+    event_language = db.Column(db.String(50), nullable=False)  # New field for language
     paymentaddress = db.Column(db.Text, nullable=False)
     max_attendees = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
@@ -45,18 +46,22 @@ class Event(db.Model):
     confirmation_email_title = db.Column(db.String(250), nullable=False)
     confirmation_email_body = db.Column(db.Text, nullable=False)
     event_meeting_link = db.Column(db.String(250), nullable=True)
+    is_closed = db.Column(db.Boolean, default=False)  # Indicates if the event is closed
 
     # Relationship to Attendee
-    attendees = db.relationship("Attendee", backref="registered_event", lazy=True)
+    attendees = db.relationship("Attendee", backref="registered_event", lazy=True, cascade="all, delete-orphan")
 
 # Attendee model
 class Attendee(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    attending = db.Column(db.Boolean, default=False)  # New field to track confirmation
 
     # Relationship to User
     user = db.relationship("User", backref="attending_events")
 
     # Relationship to Event
     event = db.relationship("Event", backref="attendee_list")
+
+

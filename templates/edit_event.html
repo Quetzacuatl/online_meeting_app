@@ -3,6 +3,7 @@
 {% block content %}
 <h2>Edit Event</h2>
 <div class="card shadow-lg p-4">
+
     <form action="{{ url_for('edit_event', event_id=event.id) }}" method="POST">
         <div class="mb-3">
             <label for="title" class="form-label">Event Title</label>
@@ -69,6 +70,12 @@
         </div>
         <div class="d-grid">
             <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+        <p></p>
+        <div class="d-grid">
+            {% if event.user_id == current_user.id %}
+            <button class="btn btn-danger" onclick="confirmDelete('{{ url_for('delete_event', event_id=event.id) }}')">Delete Event</button>
+            {% endif %}
         </div>
     </form>
 </div>

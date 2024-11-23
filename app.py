@@ -3,12 +3,13 @@ from config import Config
 from models import db
 from flask_login import LoginManager
 from flask_mail import Mail
+from flask_migrate import Migrate
 
 # Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(Config)
 mail = Mail(app) # Initialize Flask-Mail
-
+migrate = Migrate(app, db)
 
 
 # Initialize database

@@ -17,11 +17,12 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('home') }}">Event App</a>
+            <a class="navbar-brand" href="{{ url_for('home') }}" style="padding-left:10px;">MOMA - Manage Online meetings App</a>
+
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
+            <div class="collapse navbar-collapse" id="navbarNav" ></div>>
                 <ul class="navbar-nav ms-auto">
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
@@ -43,15 +44,13 @@
         </div>
     </nav>
 
-    <!-- Search Bar -->
-    <div class="search-container py-4">
-        <div class="container">
-            <form method="GET" action="{{ url_for('home') }}" class="d-flex justify-content-center">
-                <input type="text" name="search" class="form-control me-2" placeholder="Search events..." value="{{ query }}">
-                <button type="submit" class="btn btn-success">Search</button>
-            </form>
-        </div>
-    </div>
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <form method="GET" action="{{ url_for('home') }}" class="d-flex justify-content-center">
+                        <input type="text" name="search" class="form-control me-2" placeholder="Search events..." value="{{ query }}">
+                        <button type="submit" class="btn btn-success">Search</button>
+                    </form>
+                </div>
 
         <!-- Flash Messages -->
         <div class="container mt-4">
@@ -126,48 +125,167 @@
         }
     }
 
+
+
     // table Default sorting for dashboard (by Event column, A-Z)
-        $(document).ready(function() {
+    // Table filters
+    document.addEventListener("DOMContentLoaded", function () {
+    // Ensure the DataTable is initialized only once
+    if (!$.fn.DataTable.isDataTable('#attendeeTable')) {
         $('#attendeeTable').DataTable({
-            "order": [[0, "asc"]],  // Default sorting (by Event column, A-Z)
-            "columnDefs": [
-                { "orderable": true, "targets": "_all" }  // Make all columns sortable
+            pageLength: 100, // Default number of rows per page
+            lengthMenu: [10, 25, 50, 100, 200], // Options for number of rows
+            order: [[0, "asc"]], // Default sorting (by Event column, A-Z)
+            columnDefs: [
+                { orderable: true, targets: "_all" } // Make all columns sortable
             ]
+        });
+    }
+
+    // Dropdown filter for event title
+    $('#eventFilter').on('change', function () {
+        const eventTitle = $(this).val();
+        const table = $('#attendeeTable').DataTable(); // Retrieve the initialized DataTable instance
+        if (eventTitle) {
+            table.column(0).search('^' + eventTitle + '$', true, false).draw(); // Exact match
+        } else {
+            table.column(0).search('').draw(); // Show all events if no title is selected
+        }
+    });
+
+    // Date filter
+    $('#dateFilter').on('input', function () {
+        const dateValue = $(this).val();
+        const table = $('#attendeeTable').DataTable(); // Retrieve the initialized DataTable instance
+        if (dateValue) {
+            table.column(1).search(dateValue).draw(); // Filter rows by date
+        } else {
+            table.column(1).search('').draw(); // Show all rows if no date is selected
+        }
+    });
+});
+
+
+
+    // CHECKBOX FOR PAYMENT CONFIRMATION - SEND MAIL WITH MEETING URL
+    document.addEventListener("DOMContentLoaded", function () {
+        // Handle checkbox click for sending the confirmation email
+        document.querySelectorAll(".confirm-payment-checkbox").forEach(checkbox => {
+            checkbox.addEventListener("change", function () {
+                if (this.checked) {
+                    // Retrieve data attributes
+                    const attendeeId = this.dataset.attendeeId;
+                    const attendeeName = this.dataset.attendeeName;
+                    const attendeeEmail = this.dataset.attendeeEmail;
+                    const eventMeetingUrl = this.dataset.eventMeetingUrl;
+                    const eventTitle = this.dataset.eventTitle;
+                    const eventDate = this.dataset.eventDate;
+                    const hostEmail = this.dataset.hostEmail;
+                    const confirmationTitle = this.dataset.confirmationTitle;
+                    const confirmationBody = this.dataset.confirmationBody;
+
+                    // Ask for confirmation
+                    const confirmSend = confirm(`Send meeting link and instructions to ${attendeeEmail}?`);
+                    if (confirmSend) {
+                        // Send an AJAX POST request to send the email
+                        fetch('/send_confirmation_email', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                attendee_id: attendeeId,
+                                attendee_name: attendeeName,
+                                attendee_email: attendeeEmail,
+                                event_meeting_url : eventMeetingUrl,
+                                event_title: eventTitle,
+                                event_date: eventDate,
+                                host_email: hostEmail,
+                                confirmation_title: confirmationTitle,
+                                confirmation_body: confirmationBody,
+                            }),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert("Confirmation email sent successfully!");
+                                location.reload(); // Refresh the page
+                            } else {
+                                alert("Failed to send the email. Please try again.");
+                                this.checked = false; // Uncheck the box if sending failed
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            alert("Failed to send the email. Please try again.");
+                            this.checked = false; // Uncheck the box if sending failed
+                        });
+                    } else {
+                        // Uncheck the box if the user cancels
+                        this.checked = false;
+                    }
+                }
+            });
         });
     });
 
 
-    // table filters for date & event title
-    document.addEventListener("DOMContentLoaded", function () {
-    // Check if the DataTable is already initialized
-    if (!$.fn.DataTable.isDataTable('#attendeeTable')) {
-        // Initialize the DataTable
-        const table = $('#attendeeTable').DataTable({
-            pageLength: 100, // Default number of rows per page
-            lengthMenu: [10, 25, 50, 100, 200], // Options for number of rows
-        });
+    function confirmCloseEvent(closeUrl, eventId) {
+        if (confirm("Are you sure you want to close this event? This will turn the 'ATTEND' button into 'EVENT CLOSED' and prevent new attendees.")) {
+            fetch(closeUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            })
+                .then((response) => {
+                    if (response.ok) {
+                        // Find the event card by ID and update the button
+                        const eventCard = document.getElementById(`event-${eventId}`);
+                        if (eventCard) {
+                            const attendButton = eventCard.querySelector(".btn-success");
+                            if (attendButton) {
+                                attendButton.classList.remove("btn-success");
+                                attendButton.classList.add("btn-secondary");
+                                attendButton.disabled = true;
+                                attendButton.textContent = "Event Closed";
+                            }
+                        }
+                        alert("Event successfully closed!");
+                    } else {
+                        alert("Failed to close the event. Please try again.");
+                    }
+                })
+                .catch((err) => console.error("Error closing event:", err));
+        }
+    }
 
-        // Add event listener for the dropdown
-        $('#eventFilter').on('change', function () {
-            const eventTitle = $(this).val(); // Get the selected event title
-            if (eventTitle) {
-                table.column(0).search('^' + eventTitle + '$', true, false).draw(); // Exact match
-            } else {
-                table.column(0).search('').draw(); // Clear filter
-            }
-        });
 
-        // Add event listener for the date filter
-        $('#dateFilter').on('input', function () {
-            const dateValue = $(this).val(); // Get the selected date
-            if (dateValue) {
-                table.column(1).search(dateValue).draw(); // Partial match for the date column
+    //SEE EVENTS THAT I AM ATTENDING (event_list.html)
+    function filterMyAttending() {
+        // Get all event cards
+        const eventCards = document.querySelectorAll(".col[id^='event-']");
+        
+        // Loop through the cards
+        eventCards.forEach(card => {
+            // Check if the card has an attendee count greater than 0 and the user is marked as attending
+            const attendingInfo = card.querySelector(".attending-info");
+            if (attendingInfo && attendingInfo.dataset.attending === "true") {
+                card.style.display = ""; // Show the card
             } else {
-                table.column(1).search('').draw(); // Clear filter
+                card.style.display = "none"; // Hide the card
             }
         });
     }
-});
+
+    // DELETE EVENT
+    function confirmDelete(deleteUrl) {
+        if (confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
+            // Redirect to the delete URL
+            window.location.href = deleteUrl;
+        }
+    }
+    
     </script>
 
 

@@ -4,11 +4,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app import app, db, login_manager, mail
 from models import User, Event, Attendee
 from pytz import timezone, all_timezones
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import flash
 from urllib.parse import urlparse
 from app import mail
 from flask_mail import Message
+from flask import jsonify
 
 def is_valid_url(url):
     parsed = urlparse(url)
@@ -20,14 +21,42 @@ def load_user(user_id):
 
 @app.route("/")
 def home():
+    events = Event.query.all()
+
+    for event in events:
+        # Count the number of attendees marked as attending
+        attending_count = len([attendee for attendee in event.attendees if attendee.attending])
+        
+        # Check if the event should be closed
+        if attending_count >= event.max_attendees and not event.is_closed:
+            event.is_closed = True
+            db.session.commit()
     query = request.args.get("search", "")
-    if query:
-        events = Event.query.filter(
-            Event.title.contains(query) | Event.description.contains(query)
-        ).all()
+    if query.startswith("host:"):
+        host_username = query.split("host:")[1]
+        events = Event.query.join(User).filter(User.username == host_username).all()
+    elif query:
+        events = Event.query.join(User).filter(
+                Event.title.contains(query) |Event.description.contains(query) | User.username.contains(query) | Event.date.contains(query)
+        ).all() 
     else:
         events = Event.query.all()
-    return render_template("event_list.html", events=events, query=query)
+
+    # Check if the user is authenticated before processing attendees
+    if current_user.is_authenticated:
+        for event in events:
+            event.is_attending = any(
+                attendee.user_id == current_user.id and attendee.attending
+                for attendee in event.attendees
+            )
+    else:
+        # For unauthenticated users, set is_attending to False
+        for event in events:
+            event.is_attending = False
+
+    return render_template("event_list.html", events=events, query=query, datetime=datetime, timedelta=timedelta)
+
+
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -68,7 +97,7 @@ def login():
         if user and check_password_hash(user.password, password):
             login_user(user)
             flash("Login successful!", "success")
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("home"))
         flash("Invalid credentials.", "danger")
     return render_template("login.html")
 
@@ -100,7 +129,12 @@ def dashboard():
                 "attendee_name": attendee.user.username,
                 "attendee_email": attendee.user.email,
                 "payment_sent": "Yes",
-                "payment_comment": f"{event.id} + {attendee.user.email}"
+                "payment_comment": f"Event {event.id} + {attendee.user.email}",
+                "attendee_id": attendee.id,  # Required for sending confirmation email
+                "host_email": current_user.email,
+                "confirmation_email_title": current_user.confirmation_email_title,
+                "confirmation_email_body": current_user.confirmation_email_body,
+                "attending" : attendee.attending,  # Add the attending status
             })
 
     return render_template("dashboard.html", view=view, created_events=created_events, attending_events=attending_events, table_data=table_data, unique_event_titles=unique_event_titles)
@@ -155,11 +189,12 @@ def create_event():
         payment_email_body = request.form.get("payment_email_body")
         confirmation_email_title = request.form.get("confirmation_email_title")
         confirmation_email_body = request.form.get("confirmation_email_body")
+        event_language = request.form.get("event_language")  # New field
 
-        # Validate data (optional)
-        if not title or not description or not date_str or not hour_str or not tz_name or not price or not paymentaddress or not max_attendees or not event_meeting_link or not payment_email_title or not payment_email_body or not confirmation_email_title or not confirmation_email_body:
+        # Validate all fields
+        if not title or not description or not date_str or not hour_str or not tz_name or not price or not currency or not paymentaddress or not max_attendees or not event_language:
             flash("All fields are required.", "danger")
-            return redirect(url_for('home'))
+            return redirect(url_for("dashboard", view="create_event"))
         
         # Combine date and hour into a single datetime object
         try:
@@ -203,6 +238,7 @@ def create_event():
             date=event_date,
             price=price,
             currency=currency,
+            event_language=event_language,  # Save language
             paymentaddress=paymentaddress,
             max_attendees=max_attendees,
             event_meeting_link=event_meeting_link,  # Save the meeting link
@@ -335,3 +371,95 @@ def attend_event(event_id):
     db.session.commit()
 
     return redirect(url_for("home"))
+
+@app.route('/send_confirmation_email', methods=['POST'])
+@login_required
+def send_confirmation_email():
+    data = request.get_json()
+    attendee_email = data.get("attendee_email")
+    attendee_name = data.get("attendee_name")
+    event_title = data.get("event_title")
+    event_date = data.get("event_date")
+    event_meeting_url = data.get("event_meeting_url")
+    host_email = data.get("host_email")
+    confirmation_title = data.get("confirmation_title")
+    confirmation_body = data.get("confirmation_body")
+
+    # Replace placeholders in the email title and body
+    # Prepare placeholders for email
+    placeholders = {
+        "{event_user}": attendee_name,
+        "{event_title}": event_title,
+        "{event_date}": event_date,
+        "{event_meeting_url}": event_meeting_url,
+        "{host_name}": current_user.username,
+        "{host_email}": current_user.email,
+    }
+
+    for placeholder, value in placeholders.items():
+        confirmation_title = confirmation_title.replace(placeholder, str(value))
+        confirmation_body = confirmation_body.replace(placeholder, str(value))
+
+    # Find the attendee in the database
+    attendee = Attendee.query.join(Event).filter(
+        Event.title == event_title,
+        Attendee.user_id == User.query.filter_by(email=attendee_email).first().id
+    ).first()
+
+    if not attendee:
+        return jsonify({"success": False, "message": "Attendee not found"}), 404
+
+    # Send the email
+    msg = Message(confirmation_title, sender=host_email, recipients=[attendee_email])
+    msg.body = confirmation_body
+
+    try:
+        mail.send(msg)
+        attendee.attending = True  # Mark the attendee as confirmed # Mark the email as sent
+        db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        return jsonify({"success": False}), 500
+    
+
+
+
+@app.route("/close_event/<int:event_id>", methods=["POST"])
+@login_required
+def close_event(event_id):
+    event = Event.query.get_or_404(event_id)
+
+    # Ensure the current user is the organizer of the event
+    if event.user_id != current_user.id:
+        return jsonify({"success": False, "message": "You are not authorized to close this event."}), 403
+
+    # Mark the event as closed
+    event.is_closed = True
+    db.session.commit()
+
+    return jsonify({"success": True})
+
+
+@app.route("/delete_event/<int:event_id>", methods=["GET", "POST"])
+@login_required
+def delete_event(event_id):
+    event = Event.query.get_or_404(event_id)
+
+    # Ensure only the creator can delete the event
+    if event.user_id != current_user.id:
+        flash("You are not authorized to delete this event.", "danger")
+        return redirect(url_for("dashboard", view="created_events"))
+
+    try:
+        # Delete all attendees associated with the event
+        Attendee.query.filter_by(event_id=event.id).delete()
+
+        # Delete the event itself
+        db.session.delete(event)
+        db.session.commit()
+        flash("Event deleted successfully!", "success")
+    except Exception as e:
+        flash(f"Error deleting event: {e}", "danger")
+
+    return redirect(url_for("dashboard", view="created_events"))

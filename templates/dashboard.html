@@ -6,24 +6,56 @@
     <!-- Tabs for navigation -->
     <ul class="nav nav-tabs justify-content-center">
         <li class="nav-item">
-            <a class="nav-link {% if view == 'profile' %}active{% endif %}" href="{{ url_for('dashboard', view='profile') }}">Profile</a>
+            <a class="nav-link {% if view == 'how_it_works' %}active{% endif %}" href="{{ url_for('dashboard', view='how_it_works') }}">1. How it works</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if view == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard', view='dashboard') }}">Attendee Details</a>
+            <a class="nav-link {% if view == 'profile' %}active{% endif %}" href="{{ url_for('dashboard', view='profile') }}">2. Profile</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if view == 'create_event' %}active{% endif %}" href="{{ url_for('dashboard', view='create_event') }}">Create Event</a>
+            <a class="nav-link {% if view == 'create_event' %}active{% endif %}" href="{{ url_for('dashboard', view='create_event') }}">3. Create Event</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if view == 'created_events' %}active{% endif %}" href="{{ url_for('dashboard', view='created_events') }}">Created Events</a>
+            <a class="nav-link {% if view == 'created_events' %}active{% endif %}" href="{{ url_for('dashboard', view='created_events') }}">4. My Events</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link {% if view == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard', view='dashboard') }}">5. Attendee Details</a>
+        </li>
+
+
     </ul>
+
+   
+
+    <!-- How it works section -->
+    {% if view == 'how_it_works' %}
+    <p><h2 class="text-center">How it works</h2></p>
+    <div>
+        <ul>
+            <em><strong> Only share an online meeting URL (eg. google meet) AFTER you have been paid</em> </strong>
+            <li>This website manages the automatic mailing (1.payment instruction email and 2.confirmation email sharing meeting URL) and attendees list</li>
+            <li>Required : Update profile - add your payment address on which you want to receive funds</li>
+            <li>Required : manually create online meeting url (eg google meet) - add this in the field 'meeting url' when 'create event'</li>
+            <li>Required : manually check your bank / crypto account for payment and check 'confirm payment in table below'</li>
+            <li>Create event -> users attend -> this sends an automatic email with your payment instructions (set up in 'Profile' and 'create event') -> you confirm payment in table below -> sends confirmation email with meeting url</li>
+        </ul>
+        <ul>
+            <em><strong> Flow</em> </strong>
+            <li>Users click on 'attend' on your online meeting card</li>
+            <li>This sends automatically an email (payment instruction email) to the user (see the default email in your Profile or personalize the mail when creating event) </li>
+            <li>You manually check your bank / crypto account for user payment with payment comment</li>
+            <li>Payment arrived ? Manually check the box 'Confirm Payment'</li>
+            <li>This automatically sends the confirmation email with the meeting link for this online meeting (see the default email in your Profile or edit the mail when creating the event)</li>
+            <li>Open your online meeting at the prescribed time, enjoy !</li>
+            
+        </ul>
+    </div>
+    {% endif %}
 
     <!-- Profile Section -->
     {% if view == 'profile' %}
-    <div class="card shadow-lg p-4 mt-4">
-        <h2 class="text-center">Edit Profile</h2>
-        <form action="{{ url_for('edit_profile') }}" method="POST">
+    <h2>Edit Profile</h2>
+    <div class="card shadow-lg p-4 mb-4">
+        <form id="profile-form" action="{{ url_for('edit_profile') }}" method="POST">
             <div class="mb-3">
                 <label for="username" class="form-label">Name</label>
                 <input type="text" class="form-control" id="username" name="username" value="{{ current_user.username }}" required>
@@ -33,28 +65,60 @@
                 <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
             </div>
             <div class="mb-3">
-                <label for="iban" class="form-label">Payment Address (IBAN/CRYPTO)</label>
+                <label for="iban" class="form-label">Your default payment address (IBAN/CRYPTO)</label>
                 <input type="text" class="form-control" id="iban" name="iban" value="{{ current_user.iban }}" required>
             </div>
             <hr>
-            <h3>Default Email Templates</h3>
+            <h3>Default 'payment instruction' email</h3>
+            ** Do not change the variables between { }
+            <br>
             <div class="mb-3">
                 <label for="payment_email_title" class="form-label">Payment Email Title</label>
                 <input type="text" class="form-control" id="payment_email_title" name="payment_email_title"
-                    value="{{ current_user.payment_email_title }}" required>
+                       value="Registration request for {event_title} Online meeting {event_date}" required>
             </div>
             <div class="mb-3">
                 <label for="payment_email_body" class="form-label">Payment Instructions Email</label>
-                <textarea class="form-control" id="payment_email_body" name="payment_email_body" rows="6" required>{{ current_user.payment_email_body }}</textarea>
+                <textarea class="form-control" id="payment_email_body" name="payment_email_body" rows="6" required>
+                    Dear {event_user},
+    
+                    I'm excited to invite you to my online meeting {event_title} on {event_date}.
+                    I look forward to sharing the meeting link, with my meeting slides and instructions upon payment. 
+                    
+                    Price: {event_price} {event_currency}  
+                    Payment address : {host_iban}. 
+                    Comment : {comment}
+                    
+                    After payment is received, your attendance will be confirmed by email and appear on the website in your dashboard. 
+                    If you have any questions, don't hesitate to contact me.
+                    
+                    With best regards,  
+                    {host_name}  
+                    {host_email}
+                                
+                </textarea>
             </div>
+            <hr>
+            <h3>Default 'confirmation' email</h3>
+            <br>
             <div class="mb-3">
                 <label for="confirmation_email_title" class="form-label">Confirmation Email Title</label>
                 <input type="text" class="form-control" id="confirmation_email_title" name="confirmation_email_title"
-                    value="{{ current_user.confirmation_email_title }}" required>
+                       value="Confirmation of your attendance for {event_title}" required>
             </div>
             <div class="mb-3">
                 <label for="confirmation_email_body" class="form-label">Confirmation Email Body</label>
-                <textarea class="form-control" id="confirmation_email_body" name="confirmation_email_body" rows="6" required>{{ current_user.confirmation_email_body }}</textarea>
+                <textarea class="form-control" id="confirmation_email_body" name="confirmation_email_body" rows="6" required>
+                    Dear {event_user},
+    
+                    Your attendance for the online meeting {event_title} on {event_date} has been confirmed! I look forward to seeing you there.
+
+                    Online meeting link: {event_meeting_url}
+    
+                    With best regards,  
+                    {host_name}  
+                    {host_email}
+                </textarea>
             </div>
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -63,10 +127,58 @@
     </div>
     {% endif %}
 
+
+
+    {% if view == 'create_event' %}
+    <div class="card shadow-lg p-4 mt-4">
+        <h2 class="text-center">Create Online Meeting Event</h2>
+        <form action="{{ url_for('create_event') }}" method="POST">
+            {% include "create_event.html" %}
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Created Events Section -->
+    {% if view == 'created_events' %}
+    <div class="card shadow-lg p-4 mt-4">
+        <h2 class="text-center">My Events</h2>
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            {% for event in created_events %}
+            <div class="col">
+                <div class="card h-100 shadow">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ event.title }}</h5>
+                        <p class="card-text">{{ event.description }}</p>
+                        <p class="card-text"><small>Date: {{ event.date.strftime('%Y-%m-%d %H:%M %Z') }}</small></p>
+                        <p class="card-text"><small>Price: {{ event.price }} {{ event.currency }}</small></p>
+                        <p class="card-text"><small>Max Attendees: {{ event.max_attendees }}</small></p>
+                        <p class="card-text"><small>Meeting Link: <a href="{{ event.event_meeting_link }}" target="_blank">{{ event.event_meeting_link }}</a></small></p>
+                    </div>
+                    <div class="card-footer text-center">
+                        <button class="btn btn-primary" onclick="copyShareURL('{{ url_for('home', _external=True) }}#event-{{ event.id }}')">Share</button>
+                        <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-secondary">Edit Event</a>
+                            <!-- Button to disable 'Attend' for this event -->
+                        <!-- Button to close the event -->
+                        {% if event.is_closed %}
+                        <button class="btn btn-disabled" disabled>Event closed</button>
+                        {% else %}
+                        <button class="btn btn-danger" onclick="confirmCloseEvent('{{ url_for('close_event', event_id=event.id) }}')">
+                            No More New Subscribers
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Attendee Details Section -->
     {% if view == 'dashboard' %}
     <div class="card shadow-lg p-4 mt-4">
-        <h2 class="text-center">Attendee Details for Your Events</h2>
+        <h2 class="text-center">Attendee Details for my online meetings</h2>
 
 
         <div class="mb-3 d-flex justify-content-between">
@@ -87,72 +199,57 @@
                 </select>
             </div>
         </div>
-        <span></span>
-        <table id="attendeeTable" class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>Event</th>
-                    <th>Date</th>
-                    <th>Google Meet URL</th>
-                    <th>Attendee</th>
-                    <th>Email</th>
-                    <th>Payment Instruction Email Sent?</th>
-                    <th>Payment Comment</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in table_data %}
-                <tr>
-                    <td>{{ row.event }}</td>
-                    <td>{{ row.date }}</td>
-                    <td><a href="{{ row.meeting_url }}" target="_blank">{{ row.meeting_url }}</a></td>
-                    <td>{{ row.attendee_name }}</td>
-                    <td>{{ row.attendee_email }}</td>
-                    <td>{{ row.payment_sent }}</td>
-                    <td>{{ row.payment_comment }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
 
-    {% if view == 'create_event' %}
-    <div class="card shadow-lg p-4 mt-4">
-        <h2 class="text-center">Create Online Meeting Event</h2>
-        <form action="{{ url_for('create_event') }}" method="POST">
-            {% include "create_event.html" %}
-        </form>
-    </div>
-    {% endif %}
+        <div class="table-responsive spacing-controls">
+            <table id="attendeeTable" class=" table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Date</th>
+                        <th>Attendee</th>
+                        <th>Email</th>
+                        <th>Payment Instruction Email Sent?</th>
+                        <th>Verify Payment Comment</th>
+                        <th>Confirm payment / Send Meeting Link</th>
+                        <th>Attending</th>
+                        <th>Google Meet URL</th>
 
-    <!-- Created Events Section -->
-    {% if view == 'created_events' %}
-    <div class="card shadow-lg p-4 mt-4">
-        <h2 class="text-center">Your Created Events</h2>
-        <div class="row row-cols-1 row-cols-md-2 g-4">
-            {% for event in created_events %}
-            <div class="col">
-                <div class="card h-100 shadow">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ event.title }}</h5>
-                        <p class="card-text">{{ event.description }}</p>
-                        <p class="card-text"><small>Date: {{ event.date.strftime('%Y-%m-%d %H:%M %Z') }}</small></p>
-                        <p class="card-text"><small>Price: {{ event.price }} {{ event.currency }}</small></p>
-                        <p class="card-text"><small>Max Attendees: {{ event.max_attendees }}</small></p>
-                        <p class="card-text"><small>Meeting Link: <a href="{{ event.event_meeting_link }}" target="_blank">{{ event.event_meeting_link }}</a></small></p>
-                    </div>
-                    <div class="card-footer text-center">
-                        <button class="btn btn-primary" onclick="copyShareURL('{{ url_for('home', _external=True) }}#event-{{ event.id }}')">Share</button>
-                        <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-secondary">Edit Event</a>
-                    </div>
-                    
-                </div>
-            </div>
-            {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table_data %}
+                    <tr>
+                        <td>{{ row.event }}</td>
+                        <td>{{ row.date }}</td>
+                        <td>{{ row.attendee_name }}</td>
+                        <td>{{ row.attendee_email }}</td>
+                        <td>{{ row.payment_sent }}</td>
+                        <td>{{ row.payment_comment }}</td>
+                        <td>
+                            <input type="checkbox" class="confirm-payment-checkbox" 
+                                data-attendee-id="{{ row.attendee_id }}" 
+                                data-attendee-name="{{ row.attendee_name }}" 
+                                data-attendee-email="{{ row.attendee_email }}" 
+                                data-event-meeting-url="{{ row.meeting_url }}"
+                                data-event-title="{{ row.event }}" 
+                                data-event-date="{{ row.date }}" 
+                                data-host-email="{{ row.host_email }}" 
+                                data-confirmation-title="{{ row.confirmation_email_title }}" 
+                                data-confirmation-body="{{ row.confirmation_email_body }}"
+                                {% if row.attending %}checked disabled{% endif %}>
+                        </td>
+                        <td>{{row.attending}}</td>
+                        <td><a href="{{ row.meeting_url }}" target="_blank">{{ row.meeting_url }}</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
     {% endif %}
+
+
+
 </div>
 
 {% endblock %}
