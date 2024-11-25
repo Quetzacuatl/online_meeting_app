@@ -17,7 +17,7 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('home') }}" style="padding-left:10px;">MOMA - Manage Online meetings App</a>
+            <a class="navbar-brand" href="{{ url_for('home') }}" style="padding-left:10px;">MOMA - Register to Online meetings </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -270,7 +270,7 @@
         eventCards.forEach(card => {
             // Check if the card has an attendee count greater than 0 and the user is marked as attending
             const attendingInfo = card.querySelector(".attending-info");
-            if (attendingInfo && attendingInfo.dataset.attending === "true") {
+            if (attendingInfo && ( attendingInfo.dataset.attending === "true" | attendingInfo.dataset.pending === "true" )) {
                 card.style.display = ""; // Show the card
             } else {
                 card.style.display = "none"; // Hide the card

@@ -1,25 +1,20 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import current_app, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import app, db, login_manager, mail
-from models import User, Event, Attendee
+from .models import User, Event, Attendee
+from .app import db, mail
 from pytz import timezone, all_timezones
 from datetime import datetime, timedelta
-from flask import flash
-from urllib.parse import urlparse
-from app import mail
 from flask_mail import Message
-from flask import jsonify
+from urllib.parse import urlparse
+from sqlalchemy import cast, String
+
 
 def is_valid_url(url):
     parsed = urlparse(url)
     return bool(parsed.netloc) and bool(parsed.scheme)
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-@app.route("/")
+@current_app.route("/")
 def home():
     events = Event.query.all()
 
@@ -31,18 +26,20 @@ def home():
         if attending_count >= event.max_attendees and not event.is_closed:
             event.is_closed = True
             db.session.commit()
-    query = request.args.get("search", "")
-    if query.startswith("host:"):
-        host_username = query.split("host:")[1]
-        events = Event.query.join(User).filter(User.username == host_username).all()
-    elif query:
-        events = Event.query.join(User).filter(
-                Event.title.contains(query) |Event.description.contains(query) | User.username.contains(query) | Event.date.contains(query)
-        ).all() 
-    else:
-        events = Event.query.all()
+        query = request.args.get("search", "")
+        if query.startswith("host:"):
+            host_username = query.split("host:")[1]
+            events = Event.query.join(User).filter(User.username == host_username).all()
+        elif query:
+            events = Event.query.join(User).filter(
+                Event.title.contains(query) | 
+                Event.description.contains(query) | 
+                User.username.contains(query) | 
+                cast(Event.date, String).contains(query)  # Cast Event.date to string
+            ).all()
+        else:
+            events = Event.query.all()
 
-    # Check if the user is authenticated before processing attendees
     if current_user.is_authenticated:
         for event in events:
             event.is_attending = any(
@@ -50,7 +47,6 @@ def home():
                 for attendee in event.attendees
             )
     else:
-        # For unauthenticated users, set is_attending to False
         for event in events:
             event.is_attending = False
 
@@ -58,7 +54,8 @@ def home():
 
 
 
-@app.route("/register", methods=["GET", "POST"])
+
+@current_app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         username = request.form["username"]
@@ -79,16 +76,16 @@ def register():
             return render_template("register.html")
 
         # Create and save new user
-        user = User(username=username, email=email, password=password, birthdate=birthdate)
+        user = User(username=username, email=email, password=password, birthdate=birthdate) #, iban = "", payment_email_title = "", payment_email_body= "", confirmation_email_title= "", confirmation_email_body= ""
         db.session.add(user)
         db.session.commit()
 
         flash(f"Account created for {username}! Your age is {user.age}.", "success")
-        return redirect(url_for("login"))
+        return redirect(url_for('login'))
 
     return render_template("register.html")
 
-@app.route("/login", methods=["GET", "POST"])
+@current_app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         email = request.form["email"]
@@ -101,14 +98,14 @@ def login():
         flash("Invalid credentials.", "danger")
     return render_template("login.html")
 
-@app.route("/logout")
+@current_app.route("/logout")
 @login_required
 def logout():
     logout_user()
     flash("Logged out successfully.", "info")
     return redirect(url_for("home"))
 
-@app.route("/dashboard")
+@current_app.route("/dashboard")
 @login_required
 def dashboard():
     view = request.args.get("view", "dashboard")
@@ -140,7 +137,7 @@ def dashboard():
     return render_template("dashboard.html", view=view, created_events=created_events, attending_events=attending_events, table_data=table_data, unique_event_titles=unique_event_titles)
 
 
-@app.route("/edit_profile", methods=["POST"])
+@current_app.route("/edit_profile", methods=["POST"])
 @login_required
 def edit_profile():
     username = request.form.get("username")
@@ -168,10 +165,10 @@ def edit_profile():
     # Commit changes to the database
     db.session.commit()
     flash("Profile updated successfully!", "success")
-    return redirect(url_for("dashboard"))
+    return redirect(url_for("dashboard", view="create_event"))
 
 
-@app.route("/create_event", methods=["GET", "POST"])
+@current_app.route("/create_event", methods=["GET", "POST"])
 @login_required
 def create_event():
     if request.method == "POST":
@@ -223,12 +220,12 @@ def create_event():
                 raise ValueError
         except ValueError:
             flash("Price and Max Attendees must be integers greater than 0.", "danger")
-            return redirect(url_for("dashboard", view="dashboard"))
+            return redirect(url_for("dashboard", view="create_event"))
         
         # Validate the meeting link
         if not is_valid_url(event_meeting_link):
             flash("Invalid meeting link. Please enter a valid URL.", "danger")
-            return redirect(url_for("dashboard", view="dashboard"))
+            return redirect(url_for("dashboard", view="create_event"))
     
         # Create and save the event
     # Create and save the event
@@ -252,10 +249,10 @@ def create_event():
         db.session.add(event)
         db.session.commit()
         flash("Event created!", "success")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("dashboard", view="created_events"))
     return render_template("dashboard.html")
 
-@app.route("/edit_event/<int:event_id>", methods=["GET", "POST"])
+@current_app.route("/edit_event/<int:event_id>", methods=["GET", "POST"])
 @login_required
 def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
@@ -318,7 +315,7 @@ def edit_event(event_id):
     return render_template("edit_event.html", event=event)
 
 
-@app.route("/attend_event/<int:event_id>", methods=["GET"])
+@current_app.route("/attend_event/<int:event_id>", methods=["GET"])
 @login_required
 def attend_event(event_id):
     event = Event.query.get_or_404(event_id)
@@ -372,7 +369,7 @@ def attend_event(event_id):
 
     return redirect(url_for("home"))
 
-@app.route('/send_confirmation_email', methods=['POST'])
+@current_app.route('/send_confirmation_email', methods=['POST'])
 @login_required
 def send_confirmation_email():
     data = request.get_json()
@@ -425,7 +422,7 @@ def send_confirmation_email():
 
 
 
-@app.route("/close_event/<int:event_id>", methods=["POST"])
+@current_app.route("/close_event/<int:event_id>", methods=["POST"])
 @login_required
 def close_event(event_id):
     event = Event.query.get_or_404(event_id)
@@ -441,7 +438,7 @@ def close_event(event_id):
     return jsonify({"success": True})
 
 
-@app.route("/delete_event/<int:event_id>", methods=["GET", "POST"])
+@current_app.route("/delete_event/<int:event_id>", methods=["GET", "POST"])
 @login_required
 def delete_event(event_id):
     event = Event.query.get_or_404(event_id)

@@ -1,26 +1,26 @@
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy 
 from flask_login import UserMixin
-import datetime
 from datetime import date
-
-# Initialize database instance
-db = SQLAlchemy()
+from sqlalchemy import Boolean, String, Text, Integer, DateTime, Date, ForeignKey
+from sqlalchemy.sql import expression
+from sqlalchemy.orm import relationship
+from .app import db
 
 # User model
 class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(60), nullable=False)
-    birthdate = db.Column(db.Date, nullable=False)
-    iban = db.Column(db.String(60), nullable=False, default="")
-    payment_email_title = db.Column(db.String(250), nullable=False, default="")
-    payment_email_body = db.Column(db.Text, nullable=False, default="")
-    confirmation_email_title = db.Column(db.String(250), nullable=False, default="")
-    confirmation_email_body = db.Column(db.Text, nullable=False, default="")
+    id = db.Column(Integer, primary_key=True)
+    username = db.Column(String(20), unique=True, nullable=False)
+    email = db.Column(String(120), unique=True, nullable=False)
+    password = db.Column(String(250), nullable=False)
+    birthdate = db.Column(Date, nullable=False)
+    iban = db.Column(String(250), nullable=False, default='', server_default='')
+    payment_email_title = db.Column(String(250), nullable=False, default='', server_default='')
+    payment_email_body = db.Column(Text, nullable=False, default='', server_default='')
+    confirmation_email_title = db.Column(String(250), nullable=False, default='', server_default='')
+    confirmation_email_body = db.Column(Text, nullable=False, default='', server_default='')
 
     # Events created by the user
-    created_events = db.relationship("Event", backref="organizer", lazy=True)
+    created_events = relationship("Event", backref="organizer", lazy=True)
 
     @property
     def age(self):
@@ -31,37 +31,36 @@ class User(db.Model, UserMixin):
 
 # Event model
 class Event(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(250), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    date = db.Column(db.DateTime, nullable=False)
-    price = db.Column(db.Integer, nullable=False)
-    currency = db.Column(db.String(10), nullable=False)
-    event_language = db.Column(db.String(50), nullable=False)  # New field for language
-    paymentaddress = db.Column(db.Text, nullable=False)
-    max_attendees = db.Column(db.Integer, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    payment_email_title = db.Column(db.String(250), nullable=False)
-    payment_email_body = db.Column(db.Text, nullable=False)
-    confirmation_email_title = db.Column(db.String(250), nullable=False)
-    confirmation_email_body = db.Column(db.Text, nullable=False)
-    event_meeting_link = db.Column(db.String(250), nullable=True)
-    is_closed = db.Column(db.Boolean, default=False)  # Indicates if the event is closed
+    id = db.Column(Integer, primary_key=True)
+    title = db.Column(String(250), nullable=False)
+    description = db.Column(Text, nullable=False)
+    date = db.Column(DateTime, nullable=False)
+    price = db.Column(Integer, nullable=False)
+    currency = db.Column(String(10), nullable=False)
+    event_language = db.Column(String(50), nullable=False)  # New field for language
+    paymentaddress = db.Column(Text, nullable=False)
+    max_attendees = db.Column(Integer, nullable=False)
+    user_id = db.Column(Integer, ForeignKey("user.id"), nullable=False)
+    payment_email_title = db.Column(String(250), nullable=False)
+    payment_email_body = db.Column(Text, nullable=False)
+    confirmation_email_title = db.Column(String(250), nullable=False)
+    confirmation_email_body = db.Column(Text, nullable=False)
+    event_meeting_link = db.Column(String(250), nullable=True)
+    is_closed = db.Column(Boolean, server_default=expression.false())  # Use SQLAlchemy expression for default value
 
     # Relationship to Attendee
-    attendees = db.relationship("Attendee", backref="registered_event", lazy=True, cascade="all, delete-orphan")
+    attendees = relationship("Attendee", backref="registered_event", lazy=True, cascade="all, delete-orphan")
+    
 
 # Attendee model
 class Attendee(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
-    attending = db.Column(db.Boolean, default=False)  # New field to track confirmation
+    id = db.Column(Integer, primary_key=True)
+    user_id = db.Column(Integer, ForeignKey('user.id'), nullable=False)
+    event_id = db.Column(Integer, ForeignKey('event.id'), nullable=False)
+    attending = db.Column(Boolean, server_default=expression.false())  # Use SQLAlchemy expression for default value
 
     # Relationship to User
-    user = db.relationship("User", backref="attending_events")
+    user = relationship("User", backref="attending_events")
 
     # Relationship to Event
-    event = db.relationship("Event", backref="attendee_list")
-
-
+    event = relationship("Event", backref="attendee_list")

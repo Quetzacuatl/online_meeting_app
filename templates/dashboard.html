@@ -151,7 +151,7 @@
                         <p class="card-text">{{ event.description }}</p>
                         <p class="card-text"><small>Date: {{ event.date.strftime('%Y-%m-%d %H:%M %Z') }}</small></p>
                         <p class="card-text"><small>Price: {{ event.price }} {{ event.currency }}</small></p>
-                        <p class="card-text"><small>Max Attendees: {{ event.max_attendees }}</small></p>
+                        <p class="card-text"><small>Attendees: {{ event.attendees|selectattr('attending', 'equalto', True)|list|length }} / {{ event.max_attendees }}</small></p>
                         <p class="card-text"><small>Meeting Link: <a href="{{ event.event_meeting_link }}" target="_blank">{{ event.event_meeting_link }}</a></small></p>
                     </div>
                     <div class="card-footer text-center">
@@ -163,7 +163,7 @@
                         <button class="btn btn-disabled" disabled>Event closed</button>
                         {% else %}
                         <button class="btn btn-danger" onclick="confirmCloseEvent('{{ url_for('close_event', event_id=event.id) }}')">
-                            No More New Subscribers
+                            Close event
                         </button>
                         {% endif %}
                     </div>
