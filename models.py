@@ -5,6 +5,8 @@ from sqlalchemy import Boolean, String, Text, Integer, DateTime, Date, ForeignKe
 from sqlalchemy.sql import expression
 from sqlalchemy.orm import relationship
 from .app import db
+from pytz import timezone
+from sqlalchemy.types import TIMESTAMP
 
 # User model
 class User(db.Model, UserMixin):
@@ -18,6 +20,7 @@ class User(db.Model, UserMixin):
     payment_email_body = db.Column(Text, nullable=False, default='', server_default='')
     confirmation_email_title = db.Column(String(250), nullable=False, default='', server_default='')
     confirmation_email_body = db.Column(Text, nullable=False, default='', server_default='')
+    preferred_timezone = db.Column(db.String(50), nullable=False, server_default='UTC')
 
     # Events created by the user
     created_events = relationship("Event", backref="organizer", lazy=True)
@@ -34,7 +37,7 @@ class Event(db.Model):
     id = db.Column(Integer, primary_key=True)
     title = db.Column(String(250), nullable=False)
     description = db.Column(Text, nullable=False)
-    date = db.Column(DateTime, nullable=False)
+    date = db.Column(TIMESTAMP(timezone=True), nullable=False)  # Use timezone-aware DateTime
     price = db.Column(Integer, nullable=False)
     currency = db.Column(String(10), nullable=False)
     event_language = db.Column(String(50), nullable=False)  # New field for language

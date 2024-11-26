@@ -68,6 +68,16 @@
                 <label for="iban" class="form-label">Your default payment address (IBAN/CRYPTO)</label>
                 <input type="text" class="form-control" id="iban" name="iban" value="{{ current_user.iban }}" required>
             </div>
+            <div class="mb-3">
+                <label for="preferred_timezone" class="form-label">Preferred Timezone</label>
+                <select class="form-control" id="preferred_timezone" name="preferred_timezone">
+                    {% for tz in timezones %}
+                        <option value="{{ tz }}" {% if tz == current_user.preferred_timezone %}selected{% endif %}>
+                            {{ tz }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
             <hr>
             <h3>Default 'payment instruction' email</h3>
             ** Do not change the variables between { }

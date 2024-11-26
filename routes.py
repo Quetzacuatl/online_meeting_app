@@ -3,6 +3,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from .models import User, Event, Attendee
 from .app import db, mail
+import pytz
 from pytz import timezone, all_timezones
 from datetime import datetime, timedelta
 from flask_mail import Message
@@ -27,6 +28,7 @@ def home():
             event.is_closed = True
             db.session.commit()
         query = request.args.get("search", "")
+        date_filter = request.args.get("dateFilter", "")  # Check if dateFilter parameter exists
         if query.startswith("host:"):
             host_username = query.split("host:")[1]
             events = Event.query.join(User).filter(User.username == host_username).all()
@@ -34,9 +36,18 @@ def home():
             events = Event.query.join(User).filter(
                 Event.title.contains(query) | 
                 Event.description.contains(query) | 
+                Event.event_language.contains(query) | 
                 User.username.contains(query) | 
                 cast(Event.date, String).contains(query)  # Cast Event.date to string
             ).all()
+        elif date_filter:
+            # Filter by exact date
+            try:
+                selected_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
+                events = Event.query.filter(cast(Event.date, String).like(f"{selected_date}%")).all()
+            except ValueError:
+                # If dateFilter is invalid, return all events
+                events = Event.query.all()
         else:
             events = Event.query.all()
 
@@ -50,7 +61,7 @@ def home():
         for event in events:
             event.is_attending = False
 
-    return render_template("event_list.html", events=events, query=query, datetime=datetime, timedelta=timedelta)
+    return render_template("event_list.html", events=events, query=query, datetime=datetime, timedelta=timedelta, pytz=pytz)
 
 
 
@@ -112,6 +123,11 @@ def dashboard():
     created_events = Event.query.filter_by(user_id=current_user.id).all()
     attending_events = Event.query.join(Attendee).filter(Attendee.user_id == current_user.id).all()
 
+    # Pass the list of timezones to the template
+    timezones = all_timezones 
+    # Prepopulate timezone with the user's preferred timezone
+    preferred_timezone = current_user.preferred_timezone if current_user.preferred_timezone else 'UTC'
+
     # Generate unique event titles
     unique_event_titles = {event.title for event in created_events}
 
@@ -134,7 +150,8 @@ def dashboard():
                 "attending" : attendee.attending,  # Add the attending status
             })
 
-    return render_template("dashboard.html", view=view, created_events=created_events, attending_events=attending_events, table_data=table_data, unique_event_titles=unique_event_titles)
+    return render_template("dashboard.html", view=view, created_events=created_events, attending_events=attending_events, table_data=table_data, unique_event_titles=unique_event_titles,
+        timezones=timezones, preferred_timezone=preferred_timezone)
 
 
 @current_app.route("/edit_profile", methods=["POST"])
@@ -147,7 +164,7 @@ def edit_profile():
     payment_email_body = request.form.get("payment_email_body")
     confirmation_email_title = request.form.get("confirmation_email_title")
     confirmation_email_body = request.form.get("confirmation_email_body")
-
+    preferred_timezone = request.form.get("preferred_timezone")
     # Validate the IBAN format (basic validation for demonstration purposes)
     if len(iban) < 3:
         flash("Invalid payment adress format < 3 characters ?.", "danger")
@@ -161,7 +178,7 @@ def edit_profile():
     current_user.payment_email_body = payment_email_body
     current_user.confirmation_email_title = confirmation_email_title
     current_user.confirmation_email_body = confirmation_email_body
-
+    current_user.preferred_timezone = preferred_timezone
     # Commit changes to the database
     db.session.commit()
     flash("Profile updated successfully!", "success")
@@ -228,7 +245,7 @@ def create_event():
             return redirect(url_for("dashboard", view="create_event"))
     
         # Create and save the event
-    # Create and save the event
+        # Create and save the event
         event = Event(
             title=title,
             description=description,
@@ -250,6 +267,7 @@ def create_event():
         db.session.commit()
         flash("Event created!", "success")
         return redirect(url_for("dashboard", view="created_events"))
+
     return render_template("dashboard.html")
 
 @current_app.route("/edit_event/<int:event_id>", methods=["GET", "POST"])
@@ -460,3 +478,10 @@ def delete_event(event_id):
         flash(f"Error deleting event: {e}", "danger")
 
     return redirect(url_for("dashboard", view="created_events"))
+
+
+@current_app.route("/test")
+def test():
+    event = Event.query.first()
+    print(f"Event Date Stored: {event.date}")
+    return "Check your console"

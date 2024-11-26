@@ -10,6 +10,11 @@
     {% endif %}
 </div>
 
+<div class="d-flex justify-content-center mb-4">
+    <label for="dateFilter" class="me-2">Filter by Date:</label>
+    <input type="text" id="dateFilter" class="form-control" style="max-width: 200px;" placeholder="Select a date">
+</div>
+
 
 <div class="row row-cols-1 row-cols-md-3 g-4">
 
@@ -26,7 +31,9 @@
                 </small>
             </p>
                 <p class="card-text">{{ event.description }}</p>
-                <p class="card-text"><small>Date: {{ event.date.strftime('%Y-%m-%d %H:%M') }}</small></p>
+                <p class="card-text">
+                    <small>Date: <span class="event-date" data-date="{{ event.date.isoformat() }}">{{ event.date.strftime('%Y-%m-%d %H:%M') }}</span></small>
+                </p>
                 <p class="card-text"><small>Price: {{ event.price }} {{ event.currency }}</small></p>
                 <p class="card-text"><small>Attendees: {{ event.attendees|selectattr('attending', 'equalto', True)|list|length }} / {{ event.max_attendees }}</small></p>
                 <p class="card-text"><small>Language: {{ event.event_language }}</small></p> <!-- Display Language -->
@@ -35,9 +42,9 @@
                 
         </div>
             <div class="card-footer text-center">
-                {% set current_time = datetime.utcnow() %}
-                {% set event_time_utc = event.date %}
-                {% if event_time_utc < current_time  %}
+                {% set current_time = datetime.utcnow().replace(tzinfo=pytz.UTC) %}
+                {% set event_time_utc = event.date %}  <!-- Assuming event.date is timezone-aware -->
+                {% if event_time_utc < current_time %}
                     <button class="btn btn-disabled" disabled>Event Ended</button>
                 {% elif event.is_closed %}
                     <button class="btn btn-disabled" disabled>Event closed</button>
