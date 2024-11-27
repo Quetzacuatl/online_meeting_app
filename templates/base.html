@@ -14,6 +14,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 </head>
@@ -387,6 +388,110 @@
         });
     });
 
+    document.addEventListener("DOMContentLoaded", function () {
+        const shareButtons = document.querySelectorAll(".share-icon");
+
+        shareButtons.forEach(button => {
+            button.addEventListener("click", function () {
+                const title = this.getAttribute("data-title");
+                const description = this.getAttribute("data-description");
+                const url = this.getAttribute("data-url");
+                const date = this.getAttribute("data-date");
+                const meetingUrl = this.getAttribute("data-meeting-url");
+
+                // Construct share text
+                const shareText = `${title}\n${description}\nDate: ${date}\nMeeting Link: ${meetingUrl}`;
+
+                // Use Web Share API if available
+                if (navigator.share) {
+                    navigator.share({
+                        title: title,
+                        text: shareText,
+                        url: url
+                    }).catch(err => console.error("Error sharing:", err));
+                } else {
+                    // Fallback for unsupported browsers
+                    const shareLinks = `
+                        <div class="share-links">
+                            <p>Share this event:</p>
+                            <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}" target="_blank">Facebook</a> |
+                            <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}" target="_blank">Twitter</a> |
+                            <a href="https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&summary=${encodeURIComponent(description)}" target="_blank">LinkedIn</a>
+                        </div>
+                    `;
+                    const tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = shareLinks;
+                    document.body.appendChild(tempDiv);
+                }
+            });
+        });
+    });
+
+
+        //IF DONT SEND CONFIRMATION BOX IS CHECKED AND USER CLICKS ATTEND - GRAY OUT CHECKBOX SEND CONFIRMATION MAIL IN ATTENDEES TABLE
+        document.addEventListener("DOMContentLoaded", function () {
+        // Listen for the 'Attend online meeting' button click
+        const attendButtons = document.querySelectorAll(".attend-online-meeting-btn");
+        attendButtons.forEach((button) => {
+            button.addEventListener("click", function () {
+                // Get event details from the button's data attributes
+                const eventId = button.dataset.eventId;
+                const dontSendConfirmation = button.dataset.dontSendConfirmation === "true";
+
+                // If "Don't send confirmation mail" is true, disable the checkbox
+                if (dontSendConfirmation) {
+                    const checkbox = document.querySelector(`#confirm-payment-checkbox-${eventId}`);
+                    if (checkbox) {
+                        checkbox.disabled = true;
+                    }
+                }
+            });
+        });
+    });
+
+        //READ MORE READ LESS of the description
+            document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".read-more").forEach(function (link) {
+                link.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    const eventId = event.target.getAttribute("data-event-id");
+                    document.getElementById(`description-${eventId}`).style.display = "none";
+                    document.getElementById(`full-description-${eventId}`).style.display = "inline";
+                });
+            });
+
+            document.querySelectorAll(".read-less").forEach(function (link) {
+                link.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    const eventId = event.target.getAttribute("data-event-id");
+                    document.getElementById(`description-${eventId}`).style.display = "inline";
+                    document.getElementById(`full-description-${eventId}`).style.display = "none";
+                });
+            });
+        });
+
+
+        // rating logic
+            function rateEvent(eventId, rating) {
+        fetch(`/rate_event/${eventId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ rating: rating }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Thank you for rating!");
+            } else {
+                alert("Unable to submit your rating.");
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+        });
+    }
 
     </script>
 

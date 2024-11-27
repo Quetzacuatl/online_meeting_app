@@ -237,3 +237,51 @@ h2 {
     }
 }
 
+.full-description {
+    display: none;
+}
+
+.card-title-container {
+    display: flex;
+    justify-content: space-between; /* Align items to the left and right */
+    align-items: center; /* Vertically align the title and icon */
+}
+
+.card-title-container .card-title {
+    margin: 0; /* Remove any default margin for alignment */
+    font-size: 1.25rem; /* Adjust the size to fit your design */
+    flex: 1; /* Ensure the title takes up the available space */
+}
+
+.card-title-container .share-icon {
+    font-size: 1.5rem; /* Adjust the icon size */
+    color: #5cb85c; /* Match your design's color scheme */
+    cursor: pointer; /* Show a pointer cursor to indicate interactivity */
+}
+
+.star-rating {
+    display: flex;
+    direction: row-reverse;
+    justify-content: center;
+}
+
+.star-rating input {
+    display: none;
+}
+
+.star-rating label {
+    font-size: 2em;
+    color: #ccc;
+    cursor: pointer;
+    transition: color 0.2s ease-in-out;
+}
+
+.star-rating input:checked ~ label {
+    color: #ffc107;
+}
+
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+    color: #ffc107;
+}
+

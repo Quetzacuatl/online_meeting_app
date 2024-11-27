@@ -94,6 +94,11 @@ def register():
         password = generate_password_hash(request.form["password"])
         birthdate_str = request.form["birthdate"]
 
+        # Validate that the username is within the allowed length
+        if len(username) > 20:
+            flash("Username is too long. Please keep it under 20 characters.", "danger")
+            return redirect(url_for('register'))
+        
         # Parse the birthdate and validate
         try:
             birthdate = datetime.strptime(birthdate_str, "%Y-%m-%d").date()
@@ -179,6 +184,9 @@ def dashboard():
                 "attendee_email": attendee.user.email,
                 "attendee_age": attendee.user.age,
                 "payment_sent": "Yes",
+                "payment_amount": event.price,
+                "payment_currency": event.currency,
+                "payment_adress" : event.paymentaddress,
                 "payment_comment": f"Event {event.id} + {attendee.user.email}",
                 "attendee_id": attendee.id,
                 "host_email": current_user.email,
@@ -251,6 +259,7 @@ def create_event():
         confirmation_email_title = request.form.get("confirmation_email_title")
         confirmation_email_body = request.form.get("confirmation_email_body")
         event_language = request.form.get("event_language")  # New field
+        dont_send_confirmation = request.form.get("dont_send_confirmation", False)  # Checkbox value
 
         # Validate all fields
         if not title or not description or not date_str or not hour_str or not tz_name or not price or not currency or not paymentaddress or not max_attendees or not event_language:
@@ -269,9 +278,7 @@ def create_event():
             flash("Invalid timezone selected.", "danger")
             return redirect(url_for("dashboard", view="create_event"))
 
-
         # Check if the event date is in the past
-        # Validate that the event date is not in the past
         if event_date < datetime.now(event_timezone):
             flash("Event date and time cannot be in the past.", "danger")
             return redirect(url_for("dashboard", view="create_event"))
@@ -290,13 +297,19 @@ def create_event():
         if not is_valid_url(event_meeting_link):
             flash("Invalid meeting link. Please enter a valid URL.", "danger")
             return redirect(url_for("dashboard", view="create_event"))
+        
+        # Handle parameters in the payment email if confirmation mail is not sent
+        if dont_send_confirmation:
+            # Replace confirmation placeholders in payment email
+            payment_email_body = payment_email_body.replace("{event_meeting_url}", event_meeting_link)
+
     
-        # Create and save the event
         # Create and save the event
         event = Event(
             title=title,
             description=description,
             date=event_date,
+            tz_name=tz_name,     # Store original timezone
             price=price,
             currency=currency,
             event_language=event_language,  # Save language
@@ -305,9 +318,10 @@ def create_event():
             event_meeting_link=event_meeting_link,  # Save the meeting link
             payment_email_title=payment_email_title,
             payment_email_body=payment_email_body,
-            confirmation_email_title=confirmation_email_title,
-            confirmation_email_body=confirmation_email_body,
-            user_id=current_user.id
+            confirmation_email_title=confirmation_email_title if not dont_send_confirmation else "",
+            confirmation_email_body=confirmation_email_body if not dont_send_confirmation else "",
+            user_id=current_user.id,
+            dont_send_confirmation=bool(dont_send_confirmation)  # Store the value in the database
         )
 
         db.session.add(event)
@@ -315,23 +329,32 @@ def create_event():
         flash("Event created!", "success")
         return redirect(url_for("dashboard", view="created_events"))
 
-    return render_template("dashboard.html")
+    # Prepopulate timezone with the user's preferred timezone
+    preferred_timezone = current_user.preferred_timezone if current_user.preferred_timezone else 'UTC'
+
+    return render_template(
+        "dashboard.html",
+        timezones=all_timezones,  # Pass all timezones to the template
+        preferred_timezone=preferred_timezone
+    )
+
 
 @current_app.route("/edit_event/<int:event_id>", methods=["GET", "POST"])
 @login_required
 def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
+    event_timezone = event.tz_name
 
     # Ensure only the creator can edit the event
     if event.user_id != current_user.id:
         flash("You are not authorized to edit this event.", "danger")
-        return redirect(url_for("dashboard", view="dashboard"))
+        return redirect(url_for("dashboard", view="created_events"))
 
     if request.method == "POST":
         # Update event details
         event.title = request.form.get("title")
         event.description = request.form.get("description")
-        date_str = request.form.get("date")              
+        date_str = request.form.get("date")
         hour_str = request.form.get("hour")
         tz_name = request.form.get("timezone")
         event.price = request.form.get("event_price")
@@ -344,6 +367,19 @@ def edit_event(event_id):
         event.confirmation_email_title = request.form.get("confirmation_email_title")
         event.confirmation_email_body = request.form.get("confirmation_email_body")
 
+        # Combine date and hour into a single datetime object
+        try:
+            naive_datetime = datetime.strptime(f"{date_str} {hour_str}", "%Y-%m-%d %H:%M")
+            selected_timezone = pytz.timezone(tz_name)
+            event_date = selected_timezone.localize(naive_datetime)  # Apply the selected timezone
+            event.date = event_date  # Update the event's date
+        except ValueError:
+            flash("Invalid date or time format.", "danger")
+            return redirect(url_for("edit_event", event_id=event.id))
+        except Exception:
+            flash("Invalid timezone selected.", "danger")
+            return redirect(url_for("edit_event", event_id=event.id))
+
         # Validate numeric fields
         try:
             event.price = int(event.price)
@@ -354,30 +390,21 @@ def edit_event(event_id):
             flash("Price and Max Attendees must be positive integers.", "danger")
             return redirect(url_for("edit_event", event_id=event.id))
 
-        # Combine date and hour into a single datetime object
-        try:
-            naive_datetime = datetime.strptime(f"{date_str} {hour_str}", "%Y-%m-%d %H:%M")
-            event_timezone = timezone(tz_name)
-            event_date = event_timezone.localize(naive_datetime)  # Apply the selected timezone
-        except ValueError:
-            flash("Invalid date or time format.", "danger")
-            return redirect(url_for("dashboard", view="create_event"))
-        except Exception:
-            flash("Invalid timezone selected.", "danger")
-            return redirect(url_for("dashboard", view="create_event"))
-        
-        # Validate that the event date is not in the past
-        if event_date < datetime.now(event_timezone):
-            flash("Event date and time cannot be in the past.", "danger")
-            return redirect(url_for("dashboard", view="create_event"))
-
         # Save changes
         db.session.commit()
         flash("Event updated successfully!", "success")
-        return redirect(url_for("dashboard", view="dashboard"))
+        return redirect(url_for("dashboard", view="created_events"))
 
-    # Prepopulate the edit form with event data
-    return render_template("edit_event.html", event=event)
+    # Pass event details and timezones for the form
+    timezones = all_timezones
+    return render_template(
+        "edit_event.html",
+        event=event,
+        timezones=timezones,
+        event_timezone=event_timezone
+    )
+
+
 
 
 @current_app.route("/attend_event/<int:event_id>", methods=["GET"])
@@ -403,6 +430,7 @@ def attend_event(event_id):
         "{event_date}": event.date.strftime("%Y-%m-%d %H:%M %Z"),
         "{event_price}": event.price,
         "{event_currency}": event.currency,  # Add currency here
+        "{event_meeting_url}" : event.event_meeting_link,
         "{host_iban}": event.paymentaddress,
         "{host_email}": host_email,
         "{event_user}": current_user.username,
@@ -555,3 +583,89 @@ END:VCALENDAR
     response = Response(ics_content, mimetype="text/calendar")
     response.headers["Content-Disposition"] = f"attachment; filename={event.title}.ics"
     return response
+
+@current_app.route("/host/<username>")
+def host_statistics(username):
+    # Fetch the host
+    host = User.query.filter_by(username=username).first_or_404()
+
+    # Calculate statistics
+    hosted_events = Event.query.filter_by(user_id=host.id, is_closed=True).count()
+    total_participants = db.session.query(Attendee).join(Event).filter(
+        Event.user_id == host.id, Attendee.attending == True
+    ).count()
+
+    # Prepare data for rating
+    average_rating = host.average_rating
+    total_voters = host.total_voters
+
+    return render_template(
+        "host_statistics.html",
+        host=host,
+        hosted_events=hosted_events,
+        total_participants=total_participants,
+        average_rating=average_rating,
+        total_voters=total_voters,
+    )
+
+
+@current_app.route('/rate_host/<int:host_id>', methods=['POST'])
+@login_required
+def rate_host(host_id):
+    host = User.query.get_or_404(host_id)
+
+    # Check if the current user is a confirmed attendee for any of the host's events
+    is_confirmed_attendee = Attendee.query.join(Event).filter(
+        Attendee.user_id == current_user.id,
+        Event.user_id == host.id,
+        Attendee.attending == True
+    ).first()
+
+    if not is_confirmed_attendee:
+        flash("You are not allowed to rate this host.", "danger")
+        return redirect(request.referrer)
+
+    # Get the rating value from the form
+    rating = request.form.get('rating')
+    try:
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            raise ValueError
+    except ValueError:
+        flash("Invalid rating. Please select a value between 1 and 5.", "danger")
+        return redirect(request.referrer)
+
+    # Update host's total rating and voter count
+    host.total_rating += rating
+    host.total_voters += 1
+    db.session.commit()
+
+    flash("Thank you for rating!", "success")
+    return redirect(request.referrer)
+
+@current_app.route('/host/<string:host_username>')
+def host_profile(host_username):
+    host = User.query.filter_by(username=host_username).first_or_404()
+
+    # Host statistics
+    hosted_events = Event.query.filter_by(user_id=host.id, is_closed=True).all()
+    hosted_events_count = len(hosted_events)
+    total_participants = sum(len(event.attendees) for event in hosted_events)
+
+    # Check if the current user is a confirmed attendee
+    is_confirmed_attendee = False
+    if current_user.is_authenticated:
+        is_confirmed_attendee = Attendee.query.join(Event).filter(
+            Attendee.user_id == current_user.id,
+            Event.user_id == host.id,
+            Attendee.attending == True
+        ).first() is not None
+
+    return render_template(
+        "host.html",
+        host=host,
+        hosted_events_count=hosted_events_count,
+        total_participants=total_participants,
+        is_confirmed_attendee=is_confirmed_attendee
+    )
+

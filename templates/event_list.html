@@ -15,21 +15,61 @@
     <input type="text" id="dateFilter" class="form-control" style="max-width: 200px;" placeholder="Select a date">
 </div>
 
+<!-- host statistics : users can rate -->
+{% if current_user.is_authenticated and attendee and attendee.attending %}
+<div class="rating">
+    <label for="rate-event">Rate this event:</label>
+    <div id="rate-event" class="stars">
+        {% for star in range(1, 6) %}
+            <i class="fa fa-star" 
+               data-rating="{{ star }}" 
+               onclick="rateEvent('{{ event.id }}', {{ star }})"></i>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 
 <div class="row row-cols-1 row-cols-md-3 g-4">
 
     {% for event in events %}
     <div class="col event-card" id="event-{{ event.id }}" data-attending="{{ 'true' if event.is_attending else 'false' }}">
         <div class="card h-100 shadow">
+
+
             <div class="card-body">
+
+                <div class="card-title-container d-flex justify-content-between align-items-center">
                 <h5 class="card-title">{{ event.title }}</h5>
+                <i class="fa fa-share-alt share-icon"                
+                data-title="{{ event.title }}" 
+                data-description="{{ event.description }}" 
+                data-url="{{ url_for('home', _external=True) }}#event-{{ event.id }}"
+                data-date="{{ event.date.strftime('%Y-%m-%d %H:%M %Z') }}"
+                data-meeting-url="{{ event.event_meeting_link }}" 
+                aria-hidden="true"></i>
+            </div>
+
                 <p class="card-text">
+                    <small>
+                        Host: 
+                        <a href="{{ url_for('host_statistics', username=event.organizer.username) }}">{{ event.organizer.username }}</a>
+                    </small>
                     <small>
                         Host: 
                         <a href="{{ url_for('home', search='host:' ~ event.organizer.username) }}">{{ event.organizer.username }}</a>
                     </small>
                 </p>
-                <p class="card-text">{{ event.description }}</p>
+                <p class="card-text">
+                    <small>
+                        <span class="description" id="description-{{ event.id }}">
+                            {{ event.description[:100] }}{% if event.description|length > 100 %}... <a href="#" class="read-more" data-event-id="{{ event.id }}">Read more</a>{% endif %}
+                        </span>
+                        <span class="full-description" id="full-description-{{ event.id }}" style="display: none;">
+                            {{ event.description }} <a href="#" class="read-less" data-event-id="{{ event.id }}">Read less</a>
+                        </span>
+                    </small>
+                </p>
                 <p class="card-text">
                     <small>Date: <span class="event-date" data-date="{{ event.date.isoformat() }}">{{ event.date.strftime('%Y-%m-%d %H:%M') }}</span></small>
                 </p>
@@ -46,10 +86,14 @@
                                 <a href="{{ event.event_meeting_link }}" target="_blank">{{ event.event_meeting_link }}</a>
                             </small>
                         </p>
+                        <a href="https://calendar.google.com/calendar/r/eventedit?text={{ event.title|urlencode }}&dates={{ event.date.astimezone(pytz.UTC).strftime('%Y%m%dT%H%M%SZ') }}/{{ (event.date.astimezone(pytz.UTC) + timedelta(hours=1)).strftime('%Y%m%dT%H%M%SZ') }}&details={{ event.description|urlencode }} - Meeting Link: {{ event.event_meeting_link|urlencode }}&location=Online" target="_blank">
+                            <i class="fa fa-calendar attend-online-meeting-btn" aria-hidden="true"> Add to Google Calendar</i>
+                        </a>
+                        <br>
+                        <a href="https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&subject={{ event.title|urlencode }}&startdt={{ event.date.astimezone(pytz.UTC).strftime('%Y-%m-%dT%H:%M:%SZ') }}&enddt={{ (event.date.astimezone(pytz.UTC) + timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%SZ') }}&body={{ event.description|urlencode }} - Meeting Link: {{ event.event_meeting_link|urlencode }}" target="_blank">
+                            <i class="fa fa-calendar attend-online-meeting-btn" aria-hidden="true"> Add to Outlook</i>
+                        </a>
                         
-                        <a href="https://calendar.google.com/calendar/r/eventedit?text={{ event.title|urlencode }}&dates={{ event.date.strftime('%Y%m%dT%H%M%SZ') }}/{{ event.date.strftime('%Y%m%dT%H%M%SZ') }}&details={{ event.description|urlencode }} - Meeting Link: {{ event.event_meeting_link|urlencode }}&location=Online" target="_blank" >Add to Google Calendar</a>
-                        <a href="https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&subject={{ event.title|urlencode }}&startdt={{ event.date.strftime('%Y-%m-%dT%H:%M:%SZ') }}&enddt={{ event.date.strftime('%Y-%m-%dT%H:%M:%SZ') }}&body={{ event.description|urlencode }} - Meeting Link: {{ event.event_meeting_link|urlencode }}" target="_blank" >Add to Outlook</a>
-
                         <!-- ADD TO CALENDAR ICS.file -->
                          <!--
                         <div class="card-footer text-center">
@@ -74,7 +118,13 @@
                         <button class="btn btn-disabled" disabled>Attendance confirmed</button>
                     {% endif %}
                 {% else %}
-                    <button class="btn btn-success" onclick="confirmAttendance('{{ url_for('attend_event', event_id=event.id) }}')">Attend online meeting</button>
+                    <button 
+                        class="btn btn-success attend-online-meeting-btn" 
+                        onclick="confirmAttendance('{{ url_for('attend_event', event_id=event.id) }}')" 
+                        data-event-id="{{ event.id }}" 
+                        data-dont-send-confirmation="{{ 'true' if event.dont_send_confirmation else 'false' }}">
+                        Attend online meeting
+                    </button>
                 {% endif %}
             </div>
         </div>

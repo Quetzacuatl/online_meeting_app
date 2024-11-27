@@ -23,12 +23,10 @@
         </div>
         <div class="mb-3">
             <label for="timezone" class="form-label">Timezone</label>
-            <select class="form-control" id="timezone" name="timezone"  required>
-                <option value="{{ event.date.tzinfo.zone }}" selected>{{ event.date.tzinfo.zone }}</option>
-                <option value="UTC">UTC</option>
-                <option value="Europe/Brussels">Europe/Brussels</option>
-                <option value="America/New_York">America/New_York</option>
-                <option value="Asia/Tokyo">Asia/Tokyo</option>
+            <select class="form-control" id="timezone" name="timezone" required>
+                {% for tz in timezones %}
+                <option value="{{ tz }}" {% if event.tz_name and tz == event.tz_name %}selected{% endif %}>{{ tz }}</option>
+                {% endfor %}
             </select>
         </div>
         
@@ -61,6 +59,18 @@
             <label for="payment_email_body" class="form-label">Payment Instructions Email</label>
             <textarea class="form-control" id="payment_email_body" name="payment_email_body" rows="6" required>{{ event.payment_email_body }}</textarea>
         </div>
+        <!-- <div class="form-check mb-3">
+            <input 
+                class="form-check-input" 
+                type="checkbox" 
+                id="dont_send_confirmation" 
+                name="dont_send_confirmation" 
+                value="1"
+                {% if event.dont_send_confirmation %}checked{% endif %}>
+            <label class="form-check-label" for="dont_send_confirmation">
+                Don't send confirmation mail
+            </label>
+        </div> -->
         <div class="mb-3">
             <label for="confirmation_email_title" class="form-label">Confirmation Email Title</label>
             <input type="text" class="form-control" id="confirmation_email_title" name="confirmation_email_title" value="{{ event.confirmation_email_title }}" required>

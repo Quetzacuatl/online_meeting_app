@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+<!-- Host Statistics Section -->
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">Host Statistics</h5>
+        <p><strong>Hosted Events:</strong> {{ hosted_events_count }}</p>
+        <p><strong>Total Participants:</strong> {{ total_participants }}</p>
+        <p><strong>Rating:</strong> {{ host.average_rating }} / 5 ({{ host.total_voters }} votes)</p>
+        
+        {% if current_user.is_authenticated and is_confirmed_attendee %}
+        <!-- Rating Form -->
+        <form method="POST" action="{{ url_for('rate_host', host_id=host.id) }}">
+            <div class="form-group">
+                <label for="rating">Rate this Host:</label>
+                <div id="star-rating" class="star-rating">
+                    {% for i in range(1, 6) %}
+                    <input type="radio" id="star-{{ i }}" name="rating" value="{{ i }}" />
+                    <label for="star-{{ i }}" title="{{ i }} stars">{{ i }} stars</label>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-2">Submit Rating</button>
+        </form>
+        {% else %}
+        <p class="text-muted">Only confirmed attendees can rate this host.</p>
+        {% endif %}
+    </div>
+</div>
+
+</div>
+{% endblock %}

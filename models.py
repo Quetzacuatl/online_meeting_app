@@ -11,7 +11,7 @@ from sqlalchemy.types import TIMESTAMP
 # User model
 class User(db.Model, UserMixin):
     id = db.Column(Integer, primary_key=True)
-    username = db.Column(String(20), unique=True, nullable=False)
+    username = db.Column(String(50), unique=True, nullable=False)
     email = db.Column(String(120), unique=True, nullable=False)
     password = db.Column(String(250), nullable=False)
     birthdate = db.Column(Date, nullable=False)
@@ -22,6 +22,15 @@ class User(db.Model, UserMixin):
     confirmation_email_body = db.Column(Text, nullable=False, default='', server_default='')
     preferred_timezone = db.Column(db.String(50), nullable=False, server_default='UTC') 
     preferred_language = db.Column(db.String(10), nullable=False, server_default="en")  # Default to English
+
+    # New fields for rating
+    total_rating = db.Column(Integer, default=0, nullable=False, server_default="0")  # Sum of all ratings
+    total_voters = db.Column(Integer, default=0, nullable=False, server_default="0")  # Count of voters
+
+    @property
+    def average_rating(self):
+        return round(self.total_rating / self.total_voters, 2) if self.total_voters > 0 else 0
+
 
     # Events created by the user
     created_events = relationship("Event", backref="organizer", lazy=True)
@@ -39,6 +48,7 @@ class Event(db.Model):
     title = db.Column(String(250), nullable=False)
     description = db.Column(Text, nullable=False)
     date = db.Column(TIMESTAMP(timezone=True), nullable=False)  # Use timezone-aware DateTime
+    tz_name = db.Column(String(50), nullable=False, server_default='UTC') # Timezone, e.g., "Europe/Brussels"
     price = db.Column(Integer, nullable=False)
     currency = db.Column(String(10), nullable=False)
     event_language = db.Column(String(50), nullable=False)  # New field for language
@@ -51,6 +61,7 @@ class Event(db.Model):
     confirmation_email_body = db.Column(Text, nullable=False)
     event_meeting_link = db.Column(String(250), nullable=True)
     is_closed = db.Column(Boolean, server_default=expression.false())  # Use SQLAlchemy expression for default value
+    dont_send_confirmation = db.Column(Boolean, nullable=False, server_default=expression.false())  # New field
 
     # Relationship to Attendee
     attendees = relationship("Attendee", backref="registered_event", lazy=True, cascade="all, delete-orphan")

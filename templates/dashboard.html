@@ -209,6 +209,14 @@
             {% for event in created_events %}
             <div class="col">
                 <div class="card h-100 shadow">
+                    {% if current_user.id == event.user_id %} <!-- Only show share button for hosts -->
+                    <i class="fa fa-share-alt share-icon"                
+                    data-title="{{ event.title }}" 
+                    data-description="{{ event.description }}" 
+                    data-url="{{ url_for('home', _external=True) }}#event-{{ event.id }}"
+                    data-date="{{ event.date.strftime('%Y-%m-%d %H:%M %Z') }}"
+                    data-meeting-url="{{ event.event_meeting_link }}" aria-hidden="true"></i>
+                {% endif %}
                     <div class="card-body">
                         <h5 class="card-title">{{ event.title }}</h5>
                         <p class="card-text">{{ event.description }}</p>
@@ -218,9 +226,8 @@
                         <p class="card-text"><small>Meeting Link: <a href="{{ event.event_meeting_link }}" target="_blank">{{ event.event_meeting_link }}</a></small></p>
                     </div>
                     <div class="card-footer text-center">
-                        <button class="btn btn-primary" onclick="copyShareURL('{{ url_for('home', _external=True) }}#event-{{ event.id }}')">Share</button>
-                        <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-secondary">Edit Event</a>
-                        
+                        <!-- <button class="btn btn-primary" onclick="copyShareURL('{{ url_for('home', _external=True) }}#event-{{ event.id }}')">Share</button> -->
+                        <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-secondary">Edit Event</a>                        
                         {% if event.is_closed %}
                         <button class="btn btn-disabled" disabled>Event closed</button>
                         {% else %}
@@ -270,6 +277,8 @@
                         <th>Age</th>
                         <th>Email</th>
                         <th>Payment Instruction Email Sent?</th>
+                        <th>Amount & Currency</th>
+                        <th>To payment address</th>
                         <th>Verify Payment Comment</th>
                         <th>Confirm payment / Send Meeting Link</th>
                         <th>Attending</th>
@@ -286,19 +295,25 @@
                         <td>{{ row.attendee_age }}</td>
                         <td>{{ row.attendee_email }}</td>
                         <td>{{ row.payment_sent }}</td>
+                        <td>{{ row.payment_amount }} {{ row.payment_currency }}</td>
+                        <td>{{ row.payment_adress }}</td>
                         <td>{{ row.payment_comment }}</td>
                         <td>
-                            <input type="checkbox" class="confirm-payment-checkbox" 
-                                data-attendee-id="{{ row.attendee_id }}" 
-                                data-attendee-name="{{ row.attendee_name }}" 
-                                data-attendee-email="{{ row.attendee_email }}" 
-                                data-event-meeting-url="{{ row.meeting_url }}"
-                                data-event-title="{{ row.event }}" 
-                                data-event-date="{{ row.date }}" 
-                                data-host-email="{{ row.host_email }}" 
-                                data-confirmation-title="{{ row.confirmation_email_title }}" 
-                                data-confirmation-body="{{ row.confirmation_email_body }}"
-                                {% if row.attending %}checked disabled{% endif %}>
+                            <input 
+                            type="checkbox" 
+                            class="confirm-payment-checkbox" 
+                            id="confirm-payment-checkbox-{{ row.attendee_id }}" 
+                            data-attendee-id="{{ row.attendee_id }}" 
+                            data-attendee-name="{{ row.attendee_name }}" 
+                            data-attendee-email="{{ row.attendee_email }}" 
+                            data-event-meeting-url="{{ row.meeting_url }}"
+                            data-event-title="{{ row.event }}" 
+                            data-event-date="{{ row.date }}" 
+                            data-host-email="{{ row.host_email }}" 
+                            data-confirmation-title="{{ row.confirmation_email_title }}" 
+                            data-confirmation-body="{{ row.confirmation_email_body }}"
+                            {% if row.attending or row.event.dont_send_confirmation %}disabled{% endif %} 
+                            {% if row.attending %}checked{% endif %}>
                         </td>
                         <td>{{row.attending}}</td>
                         <td><a href="{{ row.meeting_url }}" target="_blank">{{ row.meeting_url }}</a></td>
