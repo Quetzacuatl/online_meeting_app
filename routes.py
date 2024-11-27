@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from flask_mail import Message
 from urllib.parse import urlparse
 from sqlalchemy import cast, String
-
+from sqlalchemy import asc, desc
 
 def is_valid_url(url):
     parsed = urlparse(url)
@@ -17,40 +17,52 @@ def is_valid_url(url):
 
 @current_app.route("/")
 def home():
-    events = Event.query.all()
+    # Retrieve search and date filter parameters
+    query = request.args.get("search", "")
+    date_filter = request.args.get("dateFilter", "")  # Check if dateFilter parameter exists
 
-    for event in events:
+    # Fetch and sort events
+    events_query = Event.query
+
+    for event in events_query.all():
         # Count the number of attendees marked as attending
         attending_count = len([attendee for attendee in event.attendees if attendee.attending])
-        
+
         # Check if the event should be closed
         if attending_count >= event.max_attendees and not event.is_closed:
             event.is_closed = True
             db.session.commit()
-        query = request.args.get("search", "")
-        date_filter = request.args.get("dateFilter", "")  # Check if dateFilter parameter exists
-        if query.startswith("host:"):
-            host_username = query.split("host:")[1]
-            events = Event.query.join(User).filter(User.username == host_username).all()
-        elif query:
-            events = Event.query.join(User).filter(
-                Event.title.contains(query) | 
-                Event.description.contains(query) | 
-                Event.event_language.contains(query) | 
-                User.username.contains(query) | 
-                cast(Event.date, String).contains(query)  # Cast Event.date to string
-            ).all()
-        elif date_filter:
-            # Filter by exact date
-            try:
-                selected_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
-                events = Event.query.filter(cast(Event.date, String).like(f"{selected_date}%")).all()
-            except ValueError:
-                # If dateFilter is invalid, return all events
-                events = Event.query.all()
-        else:
-            events = Event.query.all()
 
+    # Apply filters based on query or date filter
+    if query.startswith("host:"):
+        host_username = query.split("host:")[1]
+        events_query = events_query.join(User).filter(User.username == host_username)
+    elif query:
+        events_query = events_query.join(User).filter(
+            Event.title.contains(query) |
+            Event.description.contains(query) |
+            Event.event_language.contains(query) |
+            User.username.contains(query) |
+            cast(Event.date, String).contains(query)  # Cast Event.date to string
+        )
+    elif date_filter:
+        # Filter by exact date
+        try:
+            selected_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
+            events_query = events_query.filter(
+                cast(Event.date, String).like(f"{selected_date}%")
+            )
+        except ValueError:
+            # If dateFilter is invalid, continue without date filtering
+            pass
+
+    # Sort events: Open events first by `is_closed`, then by date (ascending)
+    events = events_query.order_by(
+        asc(Event.is_closed),  # Open events first
+        asc(Event.date)        # Earliest dates first for open events
+    ).all()
+
+    # Check attendance for the current user
     if current_user.is_authenticated:
         for event in events:
             event.is_attending = any(
@@ -61,7 +73,15 @@ def home():
         for event in events:
             event.is_attending = False
 
-    return render_template("event_list.html", events=events, query=query, datetime=datetime, timedelta=timedelta, pytz=pytz)
+    return render_template(
+        "event_list.html",
+        events=events,
+        query=query,
+        datetime=datetime,
+        timedelta=timedelta,
+        pytz=pytz
+    )
+
 
 
 
@@ -120,16 +140,32 @@ def logout():
 @login_required
 def dashboard():
     view = request.args.get("view", "dashboard")
-    created_events = Event.query.filter_by(user_id=current_user.id).all()
+    date_filter = request.args.get("dateFilter", "")  # Ensure date_filter is always initialized
+
+    # Query created events for the current user
+    created_events_query = Event.query.filter_by(user_id=current_user.id)
+
+    # Apply date filter
+    if date_filter:
+        try:
+            selected_date = datetime.strptime(date_filter, "%Y-%m-%d").date()
+            created_events_query = created_events_query.filter(
+                cast(Event.date, String).like(f"{selected_date}%")
+            )
+        except ValueError:
+            flash("Invalid date format.", "danger")
+
+    # Sort events: Open events first by date ascending, closed events by date descending
+    created_events = created_events_query.order_by(
+        Event.is_closed.asc(),  # Open events first
+        Event.date.asc()        # Earliest dates first for open events
+    ).all()
+
     attending_events = Event.query.join(Attendee).filter(Attendee.user_id == current_user.id).all()
 
     # Pass the list of timezones to the template
     timezones = all_timezones 
-    # Prepopulate timezone with the user's preferred timezone
     preferred_timezone = current_user.preferred_timezone if current_user.preferred_timezone else 'UTC'
-
-    # Generate unique event titles
-    unique_event_titles = {event.title for event in created_events}
 
     # Prepare data for the table
     table_data = []
@@ -141,17 +177,26 @@ def dashboard():
                 "meeting_url": event.event_meeting_link,
                 "attendee_name": attendee.user.username,
                 "attendee_email": attendee.user.email,
+                "attendee_age": attendee.user.age,
                 "payment_sent": "Yes",
                 "payment_comment": f"Event {event.id} + {attendee.user.email}",
-                "attendee_id": attendee.id,  # Required for sending confirmation email
+                "attendee_id": attendee.id,
                 "host_email": current_user.email,
                 "confirmation_email_title": current_user.confirmation_email_title,
                 "confirmation_email_body": current_user.confirmation_email_body,
-                "attending" : attendee.attending,  # Add the attending status
+                "attending": attendee.attending,
             })
 
-    return render_template("dashboard.html", view=view, created_events=created_events, attending_events=attending_events, table_data=table_data, unique_event_titles=unique_event_titles,
-        timezones=timezones, preferred_timezone=preferred_timezone)
+    return render_template(
+        "dashboard.html",
+        view=view,
+        created_events=created_events,
+        attending_events=attending_events,
+        table_data=table_data,
+        timezones=timezones,
+        preferred_timezone=preferred_timezone,
+        date_filter=date_filter,  # Pass the date filter to the template
+    )
 
 
 @current_app.route("/edit_profile", methods=["POST"])
@@ -165,6 +210,7 @@ def edit_profile():
     confirmation_email_title = request.form.get("confirmation_email_title")
     confirmation_email_body = request.form.get("confirmation_email_body")
     preferred_timezone = request.form.get("preferred_timezone")
+    preferred_language = request.form.get("preferred_language")  # Get preferred language
     # Validate the IBAN format (basic validation for demonstration purposes)
     if len(iban) < 3:
         flash("Invalid payment adress format < 3 characters ?.", "danger")
@@ -179,6 +225,7 @@ def edit_profile():
     current_user.confirmation_email_title = confirmation_email_title
     current_user.confirmation_email_body = confirmation_email_body
     current_user.preferred_timezone = preferred_timezone
+    current_user.preferred_language = preferred_language
     # Commit changes to the database
     db.session.commit()
     flash("Profile updated successfully!", "success")
@@ -353,7 +400,7 @@ def attend_event(event_id):
     # Replace placeholders in title and body
     placeholders = {
         "{event_title}": event.title,
-        "{event_date}": event.date.strftime("%Y-%m-%d %H:%M"),
+        "{event_date}": event.date.strftime("%Y-%m-%d %H:%M %Z"),
         "{event_price}": event.price,
         "{event_currency}": event.currency,  # Add currency here
         "{host_iban}": event.paymentaddress,
@@ -480,8 +527,31 @@ def delete_event(event_id):
     return redirect(url_for("dashboard", view="created_events"))
 
 
-@current_app.route("/test")
-def test():
-    event = Event.query.first()
-    print(f"Event Date Stored: {event.date}")
-    return "Check your console"
+from flask import Response
+
+@current_app.route("/add_to_calendar/<int:event_id>")
+@login_required
+def add_to_calendar(event_id):
+    event = Event.query.get_or_404(event_id)
+
+    # Format the .ics content
+    ics_content = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//YourApp//NONSGML v1.0//EN
+BEGIN:VEVENT
+UID:{event.id}@yourapp.com
+DTSTAMP:{event.date.strftime('%Y%m%dT%H%M%SZ')}
+DTSTART:{event.date.strftime('%Y%m%dT%H%M%SZ')}
+SUMMARY:{event.title}
+DESCRIPTION:{event.description} - Meeting Link: {event.event_meeting_link}
+LOCATION:Online
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+END:VCALENDAR
+"""
+
+    # Return the .ics file as a downloadable response
+    response = Response(ics_content, mimetype="text/calendar")
+    response.headers["Content-Disposition"] = f"attachment; filename={event.title}.ics"
+    return response

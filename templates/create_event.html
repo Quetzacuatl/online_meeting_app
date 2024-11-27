@@ -45,12 +45,18 @@
 <div class="mb-3">
     <label for="event_language" class="form-label">Event Language</label>
     <select class="form-select" id="event_language" name="event_language" required>
-        <option value="" disabled selected>Select Language</option>
-        <option value="English">English</option>
-        <option value="French">Français</option>
-        <option value="Spanish">Español</option>
-        <option value="German">Deutsch</option>
-        <option value="Dutch">Nederlands</option>
+        {% if current_user.preferred_language %}
+            <option value="{{ current_user.preferred_language }}" selected>
+                {{ current_user.preferred_language }}
+            </option>
+        {% else %}
+            <option value="" disabled selected>Select Language</option>
+        {% endif %}
+        <option value="English" {% if current_user.preferred_language == 'English' %}selected{% endif %}>English</option>
+        <option value="Français" {% if current_user.preferred_language == 'Français' %}selected{% endif %}>Français</option>
+        <option value="Deutsch" {% if current_user.preferred_language == 'Deutsch' %}selected{% endif %}>Deutsch</option>
+        <option value="Español" {% if current_user.preferred_language == 'Español' %}selected{% endif %}>Español</option>
+        <option value="Nederlands" {% if current_user.preferred_language == 'Nederlands' %}selected{% endif %}>Nederlands</option>
         <!-- Add more languages as needed -->
     </select>
 </div>

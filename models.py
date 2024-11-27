@@ -20,7 +20,8 @@ class User(db.Model, UserMixin):
     payment_email_body = db.Column(Text, nullable=False, default='', server_default='')
     confirmation_email_title = db.Column(String(250), nullable=False, default='', server_default='')
     confirmation_email_body = db.Column(Text, nullable=False, default='', server_default='')
-    preferred_timezone = db.Column(db.String(50), nullable=False, server_default='UTC')
+    preferred_timezone = db.Column(db.String(50), nullable=False, server_default='UTC') 
+    preferred_language = db.Column(db.String(10), nullable=False, server_default="en")  # Default to English
 
     # Events created by the user
     created_events = relationship("Event", backref="organizer", lazy=True)

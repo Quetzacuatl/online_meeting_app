@@ -265,16 +265,16 @@
     }
 
 
-    //SEE EVENTS THAT I AM ATTENDING (event_list.html)
+    // SEE EVENTS THAT I AM ATTENDING (event_list.html)
     function filterMyAttending() {
         // Get all event cards
         const eventCards = document.querySelectorAll(".col[id^='event-']");
         
         // Loop through the cards
         eventCards.forEach(card => {
-            // Check if the card has an attendee count greater than 0 and the user is marked as attending
+            // Check if the card has an attendee count greater than 0 and the user is marked as attending or pending
             const attendingInfo = card.querySelector(".attending-info");
-            if (attendingInfo && ( attendingInfo.dataset.attending === "true" | attendingInfo.dataset.pending === "true" )) {
+            if (attendingInfo && (attendingInfo.dataset.attending === "true" || attendingInfo.dataset.pending === "true")) {
                 card.style.display = ""; // Show the card
             } else {
                 card.style.display = "none"; // Hide the card
@@ -325,10 +325,76 @@
             });
         });
 
+
+    //DEFAULT EMAIL
+    document.addEventListener("DOMContentLoaded", function () {
+        // Add event listener to the "Reset to System Default" button
+        document.getElementById("resetToDefault").addEventListener("click", function () {
+            // Reset Payment Email Title
+            document.getElementById("payment_email_title").innerHTML = `Registration request for {event_title} Online meeting {event_date}`;
+
+            // Reset Payment Instructions Email Body
+            document.getElementById("payment_email_body").innerHTML = `
+                Dear {event_user},
+
+                I'm excited to invite you to my online meeting {event_title} on {event_date}.
+                I look forward to sharing the meeting link, with my meeting slides and instructions upon payment. 
+                
+                Price: {event_price} {event_currency}  
+                Payment address : {host_iban}. 
+                Comment : {comment}
+                
+                After payment is received, your attendance will be confirmed by email and appear on the website in your dashboard. 
+                If you have any questions, don't hesitate to contact me.
+                
+                With best regards,  
+                {host_name}  
+                {host_email}
+            `;
+
+            // Reset Confirmation Email Title
+            document.getElementById("confirmation_email_title").innerHTML = `Confirmation of your attendance for {event_title}`;
+
+            // Reset Confirmation Email Body
+            document.getElementById("confirmation_email_body").innerHTML = `
+                Dear {event_user},
+
+                Your attendance for the online meeting {event_title} on {event_date} has been confirmed! I look forward to seeing you there.
+
+                Online meeting link: {event_meeting_url}
+
+                With best regards,  
+                {host_name}  
+                {host_email}
+            `;
+        });
+    });
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Initialize Flatpickr
+        flatpickr("#dateFilter", {
+            dateFormat: "Y-m-d", // Match the date format in your database
+            defaultDate: "{{ date_filter or '' }}", // Pre-fill the selected date
+            onChange: function (selectedDates, dateStr, instance) {
+                // Redirect with the selected date as a query parameter
+                if (dateStr) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('dateFilter', dateStr); // Add or update the dateFilter parameter
+                    window.location.href = url.toString(); // Reload the page with the new filter
+                }
+            }
+        });
+    });
+
+
     </script>
 
     <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+
+
 
 
 </body>

@@ -19,40 +19,58 @@
 <div class="row row-cols-1 row-cols-md-3 g-4">
 
     {% for event in events %}
-    <div class="col" id="event-{{ event.id }}">
+    <div class="col event-card" id="event-{{ event.id }}" data-attending="{{ 'true' if event.is_attending else 'false' }}">
         <div class="card h-100 shadow">
             <div class="card-body">
                 <h5 class="card-title">{{ event.title }}</h5>
-                            <!-- Host Name -->
-            <p class="card-text">
-                <small>
-                    Host: 
-                    <a href="{{ url_for('home', search='host:' ~ event.organizer.username) }}">{{ event.organizer.username }}</a>
-                </small>
-            </p>
+                <p class="card-text">
+                    <small>
+                        Host: 
+                        <a href="{{ url_for('home', search='host:' ~ event.organizer.username) }}">{{ event.organizer.username }}</a>
+                    </small>
+                </p>
                 <p class="card-text">{{ event.description }}</p>
                 <p class="card-text">
                     <small>Date: <span class="event-date" data-date="{{ event.date.isoformat() }}">{{ event.date.strftime('%Y-%m-%d %H:%M') }}</span></small>
                 </p>
                 <p class="card-text"><small>Price: {{ event.price }} {{ event.currency }}</small></p>
                 <p class="card-text"><small>Attendees: {{ event.attendees|selectattr('attending', 'equalto', True)|list|length }} / {{ event.max_attendees }}</small></p>
-                <p class="card-text"><small>Language: {{ event.event_language }}</small></p> <!-- Display Language -->
-                <!-- Add a hidden indicator for whether the current user is attending -->
+                <p class="card-text"><small>Language: {{ event.event_language }}</small></p>
                 <p class="attending-info" data-attending="{{ 'true' if event.is_attending else 'false' }}" data-pending="{{ 'true' if event.attendees|selectattr('user_id', 'equalto', current_user.id)|selectattr('attending', 'equalto', False)|list|length > 0 else 'false' }}" hidden></p>
                 
-        </div>
+                {% if current_user.is_authenticated %}
+                    {% set attendee = event.attendees|selectattr('user_id', 'equalto', current_user.id)|first %}
+                    {% if attendee and attendee.attending %}
+                        <p class="card-text">
+                            <small>Meeting Link: 
+                                <a href="{{ event.event_meeting_link }}" target="_blank">{{ event.event_meeting_link }}</a>
+                            </small>
+                        </p>
+                        
+                        <a href="https://calendar.google.com/calendar/r/eventedit?text={{ event.title|urlencode }}&dates={{ event.date.strftime('%Y%m%dT%H%M%SZ') }}/{{ event.date.strftime('%Y%m%dT%H%M%SZ') }}&details={{ event.description|urlencode }} - Meeting Link: {{ event.event_meeting_link|urlencode }}&location=Online" target="_blank" >Add to Google Calendar</a>
+                        <a href="https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&subject={{ event.title|urlencode }}&startdt={{ event.date.strftime('%Y-%m-%dT%H:%M:%SZ') }}&enddt={{ event.date.strftime('%Y-%m-%dT%H:%M:%SZ') }}&body={{ event.description|urlencode }} - Meeting Link: {{ event.event_meeting_link|urlencode }}" target="_blank" >Add to Outlook</a>
+
+                        <!-- ADD TO CALENDAR ICS.file -->
+                         <!--
+                        <div class="card-footer text-center">
+                            <a href="{{ url_for('add_to_calendar', event_id=event.id) }}" class="btn btn-info">
+                                Add to Calendar
+                            </a>
+                        </div> -->
+                    {% endif %}
+                {% endif %}
+            </div>
             <div class="card-footer text-center">
                 {% set current_time = datetime.utcnow().replace(tzinfo=pytz.UTC) %}
-                {% set event_time_utc = event.date %}  <!-- Assuming event.date is timezone-aware -->
+                {% set event_time_utc = event.date %}
                 {% if event_time_utc < current_time %}
                     <button class="btn btn-disabled" disabled>Event Ended</button>
                 {% elif event.is_closed %}
                     <button class="btn btn-disabled" disabled>Event closed</button>
-                {% elif current_user.is_authenticated and event.attendees|selectattr('user_id', 'equalto', current_user.id)|list|length > 0 %}
-                    {% set attendee = event.attendees|selectattr('user_id', 'equalto', current_user.id)|first %}
+                {% elif current_user.is_authenticated and attendee %}
                     {% if not attendee.attending %}
                         <button class="btn btn-warning" disabled>Pending Confirmation, see Payment mail</button>
-                        {% else %}
+                    {% else %}
                         <button class="btn btn-disabled" disabled>Attendance confirmed</button>
                     {% endif %}
                 {% else %}

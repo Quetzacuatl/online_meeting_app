@@ -36,7 +36,8 @@
             <li>Required : Update profile - add your payment address on which you want to receive funds</li>
             <li>Required : manually create online meeting url (eg google meet) - add this in the field 'meeting url' when 'create event'</li>
             <li>Required : manually check your bank / crypto account for payment and check 'confirm payment in table below'</li>
-            <li>Create event -> users attend -> this sends an automatic email with your payment instructions (set up in 'Profile' and 'create event') -> you confirm payment in table below -> sends confirmation email with meeting url</li>
+            <li>Required : manually ensure that users can join the meeting by clicking on the meeting link ! (sometimes required to 'invite users')</li>
+            <li>Create event -> users click attend -> this sends an automatic email with your payment instructions (set up in 'Profile' and 'create event') -> you confirm payment in 'Attendee details list'  -> This sends confirmation email with meeting url</li>
         </ul>
         <ul>
             <em><strong> Flow</em> </strong>
@@ -53,7 +54,7 @@
 
     <!-- Profile Section -->
     {% if view == 'profile' %}
-    <h2>Edit Profile</h2>
+    <br><br><h2>Edit Profile</h2>
     <div class="card shadow-lg p-4 mb-4">
         <form id="profile-form" action="{{ url_for('edit_profile') }}" method="POST">
             <div class="mb-3">
@@ -78,57 +79,101 @@
                     {% endfor %}
                 </select>
             </div>
-            <hr>
-            <h3>Default 'payment instruction' email</h3>
-            ** Do not change the variables between { }
+            <div class="mb-3">
+                <label for="preferred_language" class="form-label">Preferred Language</label>
+                <select class="form-control" id="preferred_language" name="preferred_language" required>
+                    <option value="English" {% if current_user.preferred_language == 'English' %}selected{% endif %}>English</option>
+                    <option value="Français" {% if current_user.preferred_language == 'Français' %}selected{% endif %}>Français</option>
+                    <option value="Deutsch" {% if current_user.preferred_language == 'Deutsch' %}selected{% endif %}>Deutsch</option>
+                    <option value="Español" {% if current_user.preferred_language == 'Español' %}selected{% endif %}>Español</option>
+                    <option value="Nederlands" {% if current_user.preferred_language == 'Nederlands' %}selected{% endif %}>Nederlands</option>
+                    <!-- Add more languages as needed -->
+                </select>
+            </div>
+            
             <br>
+            <hr>
+            <p><h3>My default 'payment instruction' email</h3></p>
+            ** Do not change the variables between { }
+            <br><br><div class="mb-3">
+                <button type="button" class="btn btn-warning" id="resetToDefault">Reset to System Default</button>
+            </div>
+            <br><br>
+
+            <!-- Payment Email Title -->
             <div class="mb-3">
                 <label for="payment_email_title" class="form-label">Payment Email Title</label>
-                <input type="text" class="form-control" id="payment_email_title" name="payment_email_title"
-                       value="Registration request for {event_title} Online meeting {event_date}" required>
+                <textarea 
+                    type="text" 
+                    class="form-control" 
+                    id="payment_email_title" 
+                    name="payment_email_title" 
+                    rows="1" 
+                    required>{% if current_user.payment_email_title %}{{ current_user.payment_email_title | trim }}{% else %}Registration request for {event_title} Online meeting {event_date}{% endif %}</textarea>
             </div>
+
+
+
+            <!-- Payment Instructions Email -->
             <div class="mb-3">
                 <label for="payment_email_body" class="form-label">Payment Instructions Email</label>
-                <textarea class="form-control" id="payment_email_body" name="payment_email_body" rows="6" required>
-                    Dear {event_user},
-    
-                    I'm excited to invite you to my online meeting {event_title} on {event_date}.
-                    I look forward to sharing the meeting link, with my meeting slides and instructions upon payment. 
-                    
-                    Price: {event_price} {event_currency}  
-                    Payment address : {host_iban}. 
-                    Comment : {comment}
-                    
-                    After payment is received, your attendance will be confirmed by email and appear on the website in your dashboard. 
-                    If you have any questions, don't hesitate to contact me.
-                    
-                    With best regards,  
-                    {host_name}  
-                    {host_email}
-                                
-                </textarea>
+                <textarea 
+                    class="form-control" 
+                    id="payment_email_body" 
+                    name="payment_email_body" 
+                    rows="6" 
+                    required>{% if current_user.payment_email_body %}{{ current_user.payment_email_body }}{% else %}
+            Dear {event_user},
+
+            I'm excited to invite you to my online meeting {event_title} on {event_date}.
+            I look forward to sharing the meeting link, with my meeting slides and instructions upon payment. 
+
+            Price: {event_price} {event_currency}  
+            Payment address : {host_iban}. 
+            Comment : {comment}
+
+            After payment is received, your attendance will be confirmed by email and appear on the website in your dashboard. 
+            If you have any questions, don't hesitate to contact me.
+
+            With best regards,  
+            {host_name}  
+            {host_email}{% endif %}</textarea>
             </div>
+
             <hr>
-            <h3>Default 'confirmation' email</h3>
+            <h3>My default 'confirmation' email</h3>
             <br>
+
+            <!-- Confirmation Email Title -->
             <div class="mb-3">
                 <label for="confirmation_email_title" class="form-label">Confirmation Email Title</label>
-                <input type="text" class="form-control" id="confirmation_email_title" name="confirmation_email_title"
-                       value="Confirmation of your attendance for {event_title}" required>
+                <textarea 
+                    type="text" 
+                    class="form-control" 
+                    id="confirmation_email_title" 
+                    name="confirmation_email_title" 
+                    rows="1" 
+                    required>{% if current_user.confirmation_email_title %}{{ current_user.confirmation_email_title | trim }}{% else %}Confirmation of your attendance for {event_title}{% endif %}</textarea>
             </div>
+
+            <!-- Confirmation Email Body -->
             <div class="mb-3">
                 <label for="confirmation_email_body" class="form-label">Confirmation Email Body</label>
-                <textarea class="form-control" id="confirmation_email_body" name="confirmation_email_body" rows="6" required>
-                    Dear {event_user},
-    
-                    Your attendance for the online meeting {event_title} on {event_date} has been confirmed! I look forward to seeing you there.
+                <textarea 
+                    class="form-control" 
+                    id="confirmation_email_body" 
+                    name="confirmation_email_body" 
+                    rows="6" 
+                    required>{% if current_user.confirmation_email_body %}{{ current_user.confirmation_email_body}}{% else %}
+            Dear {event_user},
 
-                    Online meeting link: {event_meeting_url}
-    
-                    With best regards,  
-                    {host_name}  
-                    {host_email}
-                </textarea>
+            Your attendance for the online meeting {event_title} on {event_date} has been confirmed! I look forward to seeing you there.
+
+            Online meeting link: {event_meeting_url}
+
+            With best regards,  
+            {host_name}  
+            {host_email}{% endif %}</textarea>
             </div>
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -152,6 +197,14 @@
     {% if view == 'created_events' %}
     <div class="card shadow-lg p-4 mt-4">
         <h2 class="text-center">My Events</h2>
+        
+        <!-- Date Filter Input -->
+        <div class="d-flex justify-content-center mb-4">
+            <label for="dateFilter" class="me-2">Filter by Date:</label>
+            <input type="text" id="dateFilter" class="form-control" style="max-width: 200px;" placeholder="Select a date"
+                value="{{ date_filter }}">  <!-- Pre-fill date filter if applied -->
+        </div>
+        
         <div class="row row-cols-1 row-cols-md-2 g-4">
             {% for event in created_events %}
             <div class="col">
@@ -167,23 +220,20 @@
                     <div class="card-footer text-center">
                         <button class="btn btn-primary" onclick="copyShareURL('{{ url_for('home', _external=True) }}#event-{{ event.id }}')">Share</button>
                         <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-secondary">Edit Event</a>
-                            <!-- Button to disable 'Attend' for this event -->
-                        <!-- Button to close the event -->
+                        
                         {% if event.is_closed %}
                         <button class="btn btn-disabled" disabled>Event closed</button>
                         {% else %}
-                        <button class="btn btn-danger" onclick="confirmCloseEvent('{{ url_for('close_event', event_id=event.id) }}')">
-                            Close event
-                        </button>
+                        <button class="btn btn-danger" onclick="confirmCloseEvent('{{ url_for('close_event', event_id=event.id) }}')">Close event</button>
                         {% endif %}
                     </div>
-                    
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
     {% endif %}
+
 
     <!-- Attendee Details Section -->
     {% if view == 'dashboard' %}
@@ -217,6 +267,7 @@
                         <th>Event</th>
                         <th>Date</th>
                         <th>Attendee</th>
+                        <th>Age</th>
                         <th>Email</th>
                         <th>Payment Instruction Email Sent?</th>
                         <th>Verify Payment Comment</th>
@@ -232,6 +283,7 @@
                         <td>{{ row.event }}</td>
                         <td>{{ row.date }}</td>
                         <td>{{ row.attendee_name }}</td>
+                        <td>{{ row.attendee_age }}</td>
                         <td>{{ row.attendee_email }}</td>
                         <td>{{ row.payment_sent }}</td>
                         <td>{{ row.payment_comment }}</td>
