@@ -73,6 +73,8 @@
             {% endwith %}
         </div>
 
+
+
     <!-- Main Content -->
     <div class="container py-5">
         {% block content %}{% endblock %}
@@ -388,6 +390,8 @@
         });
     });
 
+
+    // SHARE ICON
     document.addEventListener("DOMContentLoaded", function () {
         const shareButtons = document.querySelectorAll(".share-icon");
 
@@ -471,27 +475,99 @@
         });
 
 
-        // rating logic
-            function rateEvent(eventId, rating) {
-        fetch(`/rate_event/${eventId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ rating: rating }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert("Thank you for rating!");
-            } else {
-                alert("Unable to submit your rating.");
-            }
-        })
-        .catch(error => {
-            console.error("Error:", error);
+
+        // STAR RATING
+        document.addEventListener("DOMContentLoaded", function () {
+            // Get all the stars (labels) and reverse them for proper order
+            const starLabels = Array.from(document.querySelectorAll(".star-rating label")).reverse();
+
+            // Handle hover effect
+            starLabels.forEach((label, index) => {
+                label.addEventListener("mouseenter", () => {
+                    // Highlight all stars up to the hovered star
+                    for (let i = 0; i <= index; i++) {
+                        starLabels[i].style.color = "#f4c150"; // Yellow
+                    }
+                    // Reset stars beyond the hovered star
+                    for (let i = index + 1; i < starLabels.length; i++) {
+                        starLabels[i].style.color = "#ccc"; // Default color
+                    }
+                });
+
+                label.addEventListener("mouseleave", () => {
+                    // Reset all stars to their default color
+                    starLabels.forEach(label => (label.style.color = "#ccc"));
+
+                    // Apply the checked stars highlight
+                    const checkedInput = document.querySelector(".star-rating input:checked");
+                    if (checkedInput) {
+                        const checkedIndex = starLabels.findIndex(
+                            label => label.htmlFor === checkedInput.id
+                        );
+                        for (let i = 0; i <= checkedIndex; i++) {
+                            starLabels[i].style.color = "#f4c150"; // Yellow
+                        }
+                    }
+                });
+
+                // Handle click to save rating
+                label.addEventListener("click", () => {
+                    const input = document.getElementById(label.htmlFor); // Corresponding input
+                    input.checked = true; // Mark input as checked
+
+                    // Apply the highlight for the selected stars
+                    for (let i = 0; i <= index; i++) {
+                        starLabels[i].style.color = "#f4c150"; // Yellow
+                    }
+                    for (let i = index + 1; i < starLabels.length; i++) {
+                        starLabels[i].style.color = "#ccc"; // Default color
+                    }
+                });
+            });
         });
-    }
+
+
+
+        //CLOSE BUTTON CHANGE DYNAMICALLY IN CREATED_EVENTS (my events)
+        // CLOSE BUTTON CHANGE DYNAMICALLY IN CREATED_EVENTS (my events)
+        document.addEventListener("DOMContentLoaded", function () {
+            // Select all close event buttons
+            const closeEventButtons = document.querySelectorAll(".close-event-btn");
+
+            closeEventButtons.forEach(button => {
+                button.addEventListener("click", function () {
+                    const eventId = button.getAttribute("data-event-id");
+
+                    // Send an AJAX POST request to close the event
+                    fetch(`/close_event/${eventId}`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Change the button to "Event closed"
+                                button.classList.remove("btn-danger");
+                                button.classList.add("btn-disabled");
+                                button.textContent = "Event closed";
+                                button.disabled = true;
+                            } else {
+                                alert(data.message || "Failed to close the event.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error closing event:", error);
+                            alert("An error occurred while closing the event.");
+                        });
+                });
+            });
+        });
+
+
+
+
 
     </script>
 

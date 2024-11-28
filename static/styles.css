@@ -259,29 +259,34 @@ h2 {
     cursor: pointer; /* Show a pointer cursor to indicate interactivity */
 }
 
+/* Star Rating Container */
 .star-rating {
     display: flex;
-    direction: row-reverse;
+    flex-direction: row-reverse; /* Reverse the visual order */
     justify-content: center;
 }
 
+/* Hide the radio buttons */
 .star-rating input {
     display: none;
 }
 
+/* Style the stars */
 .star-rating label {
-    font-size: 2em;
-    color: #ccc;
-    cursor: pointer;
-    transition: color 0.2s ease-in-out;
+    font-size: 2em; /* Adjust star size */
+    color: #ccc; /* Default star color */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: color 0.2s ease-in-out; /* Smooth color transition */
 }
 
-.star-rating input:checked ~ label {
-    color: #ffc107;
-}
-
+/* Highlight stars on hover */
 .star-rating label:hover,
 .star-rating label:hover ~ label {
-    color: #ffc107;
+    color: #ffc107; /* Gold on hover */
 }
 
+/* Highlight stars for the selected rating */
+.star-rating input:checked + label,
+.star-rating input:checked + label ~ label {
+    color: #ffc107; /* Gold for selected stars */
+}

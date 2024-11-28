@@ -53,7 +53,7 @@
                 <p class="card-text">
                     <small>
                         Host: 
-                        <a href="{{ url_for('host_statistics', username=event.organizer.username) }}">{{ event.organizer.username }}</a>
+                        <a href="{{ url_for('host_profile', host_username=event.organizer.username) }}">{{ event.organizer.username }}</a>
                     </small>
                     <small>
                         Host: 

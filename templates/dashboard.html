@@ -9,7 +9,7 @@
             <a class="nav-link {% if view == 'how_it_works' %}active{% endif %}" href="{{ url_for('dashboard', view='how_it_works') }}">1. How it works</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if view == 'profile' %}active{% endif %}" href="{{ url_for('dashboard', view='profile') }}">2. Profile</a>
+            <a class="nav-link {% if view == 'profile' %}active{% endif %}" href="{{ url_for('dashboard', view='profile') }}">2. Settings</a>
         </li>
         <li class="nav-item">
             <a class="nav-link {% if view == 'create_event' %}active{% endif %}" href="{{ url_for('dashboard', view='create_event') }}">3. Create Event</a>
@@ -54,7 +54,7 @@
 
     <!-- Profile Section -->
     {% if view == 'profile' %}
-    <br><br><h2>Edit Profile</h2>
+    <br><br><h2>Settings</h2>
     <div class="card shadow-lg p-4 mb-4">
         <form id="profile-form" action="{{ url_for('edit_profile') }}" method="POST">
             <div class="mb-3">
@@ -176,7 +176,7 @@
             {host_email}{% endif %}</textarea>
             </div>
             <div class="d-grid">
-                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="submit" class="btn btn-primary">Save Settings</button>
             </div>
         </form>
     </div>
@@ -226,12 +226,11 @@
                         <p class="card-text"><small>Meeting Link: <a href="{{ event.event_meeting_link }}" target="_blank">{{ event.event_meeting_link }}</a></small></p>
                     </div>
                     <div class="card-footer text-center">
-                        <!-- <button class="btn btn-primary" onclick="copyShareURL('{{ url_for('home', _external=True) }}#event-{{ event.id }}')">Share</button> -->
                         <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-secondary">Edit Event</a>                        
                         {% if event.is_closed %}
                         <button class="btn btn-disabled" disabled>Event closed</button>
                         {% else %}
-                        <button class="btn btn-danger" onclick="confirmCloseEvent('{{ url_for('close_event', event_id=event.id) }}')">Close event</button>
+                        <button class="btn btn-danger close-event-btn" data-event-id="{{ event.id }}">Close event</button>
                         {% endif %}
                     </div>
                 </div>

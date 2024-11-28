@@ -79,3 +79,15 @@ class Attendee(db.Model):
 
     # Relationship to Event
     event = relationship("Event", backref="attendee_list")
+
+
+class Vote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # The voter
+    host_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # The host being rated
+    rating = db.Column(db.Integer, nullable=False)  # Rating value
+
+    # Relationships
+    user = db.relationship('User', foreign_keys=[user_id], backref='votes_cast')  # Votes cast by the user
+    host = db.relationship('User', foreign_keys=[host_id], backref='received_votes')  # Votes received by the host
+

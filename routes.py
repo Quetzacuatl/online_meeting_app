@@ -1,7 +1,7 @@
 from flask import current_app, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
-from .models import User, Event, Attendee
+from .models import User, Event, Attendee, Vote
 from .app import db, mail
 import pytz
 from pytz import timezone, all_timezones
@@ -584,29 +584,7 @@ END:VCALENDAR
     response.headers["Content-Disposition"] = f"attachment; filename={event.title}.ics"
     return response
 
-@current_app.route("/host/<username>")
-def host_statistics(username):
-    # Fetch the host
-    host = User.query.filter_by(username=username).first_or_404()
 
-    # Calculate statistics
-    hosted_events = Event.query.filter_by(user_id=host.id, is_closed=True).count()
-    total_participants = db.session.query(Attendee).join(Event).filter(
-        Event.user_id == host.id, Attendee.attending == True
-    ).count()
-
-    # Prepare data for rating
-    average_rating = host.average_rating
-    total_voters = host.total_voters
-
-    return render_template(
-        "host_statistics.html",
-        host=host,
-        hosted_events=hosted_events,
-        total_participants=total_participants,
-        average_rating=average_rating,
-        total_voters=total_voters,
-    )
 
 
 @current_app.route('/rate_host/<int:host_id>', methods=['POST'])
@@ -614,19 +592,26 @@ def host_statistics(username):
 def rate_host(host_id):
     host = User.query.get_or_404(host_id)
 
-    # Check if the current user is a confirmed attendee for any of the host's events
-    is_confirmed_attendee = Attendee.query.join(Event).filter(
+    # Fetch closed events hosted by the host where the current user was an attendee
+    closed_events_attended = Attendee.query.join(Event).filter(
         Attendee.user_id == current_user.id,
         Event.user_id == host.id,
+        Event.is_closed == True,
         Attendee.attending == True
-    ).first()
+    ).all()
 
-    if not is_confirmed_attendee:
-        flash("You are not allowed to rate this host.", "danger")
+    max_votes = len(closed_events_attended)  # Max votes allowed based on closed events attended
+
+    # Check how many votes the user has already cast for this host
+    votes_cast = Vote.query.filter_by(user_id=current_user.id, host_id=host.id).count()
+
+    if votes_cast >= max_votes:
+        flash("You have reached the maximum number of votes for this host.", "danger")
         return redirect(request.referrer)
 
     # Get the rating value from the form
     rating = request.form.get('rating')
+    print('rating: '+rating)
     try:
         rating = int(rating)
         if rating < 1 or rating > 5:
@@ -635,13 +620,21 @@ def rate_host(host_id):
         flash("Invalid rating. Please select a value between 1 and 5.", "danger")
         return redirect(request.referrer)
 
+    # Record the vote
+    vote = Vote(user_id=current_user.id, host_id=host.id, rating=rating)
+    db.session.add(vote)
+
     # Update host's total rating and voter count
     host.total_rating += rating
     host.total_voters += 1
+
     db.session.commit()
 
     flash("Thank you for rating!", "success")
     return redirect(request.referrer)
+
+
+
 
 @current_app.route('/host/<string:host_username>')
 def host_profile(host_username):
@@ -652,20 +645,39 @@ def host_profile(host_username):
     hosted_events_count = len(hosted_events)
     total_participants = sum(len(event.attendees) for event in hosted_events)
 
+    # Calculate average rating and total voters
+    average_rating = host.average_rating
+    total_voters = host.total_voters
+    total_rating = host.total_rating
+    print(total_rating)
+    print(average_rating)
+
     # Check if the current user is a confirmed attendee
     is_confirmed_attendee = False
+    remaining_votes = 0
+    max_votes = 0
+
     if current_user.is_authenticated:
-        is_confirmed_attendee = Attendee.query.join(Event).filter(
+        closed_events_attended = Attendee.query.join(Event).filter(
             Attendee.user_id == current_user.id,
             Event.user_id == host.id,
+            Event.is_closed == True,
             Attendee.attending == True
-        ).first() is not None
+        ).all()
+        max_votes = len(closed_events_attended)
+        votes_cast = Vote.query.filter_by(user_id=current_user.id, host_id=host.id).count()
+        remaining_votes = max(max_votes - votes_cast, 0)
+        is_confirmed_attendee = len(closed_events_attended) > 0
 
+    # Pass all relevant data to the template
     return render_template(
-        "host.html",
+        "host_statistics.html",
         host=host,
         hosted_events_count=hosted_events_count,
         total_participants=total_participants,
-        is_confirmed_attendee=is_confirmed_attendee
+        is_confirmed_attendee=is_confirmed_attendee,
+        remaining_votes=remaining_votes,
+        max_votes=max_votes,
+        average_rating=average_rating,  # Explicitly pass average rating
+        total_voters=total_voters       # Explicitly pass total voters
     )
-
