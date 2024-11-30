@@ -29,6 +29,7 @@
     <!-- How it works section -->
     {% if view == 'how_it_works' %}
     <p><h2 class="text-center">How it works</h2></p>
+    <br>
     <div>
         <ul>
             <em><strong> Only share an online meeting URL (eg. google meet) AFTER you have been paid</em> </strong>
@@ -39,6 +40,7 @@
             <li>Required : manually ensure that users can join the meeting by clicking on the meeting link ! (sometimes required to 'invite users')</li>
             <li>Create event -> users click attend -> this sends an automatic email with your payment instructions (set up in 'Profile' and 'create event') -> you confirm payment in 'Attendee details list'  -> This sends confirmation email with meeting url</li>
         </ul>
+        <br>
         <ul>
             <em><strong> Flow</em> </strong>
             <li>Users click on 'attend' on your online meeting card</li>
@@ -114,35 +116,36 @@
 
 
 
-            <!-- Payment Instructions Email -->
+            <!-- Payment Email Body -->
             <div class="mb-3">
                 <label for="payment_email_body" class="form-label">Payment Instructions Email</label>
                 <textarea 
                     class="form-control" 
                     id="payment_email_body" 
                     name="payment_email_body" 
-                    rows="6" 
+                    rows="10" 
                     required>{% if current_user.payment_email_body %}{{ current_user.payment_email_body }}{% else %}
-            Dear {event_user},
+Dear {event_user},
 
-            I'm excited to invite you to my online meeting {event_title} on {event_date}.
-            I look forward to sharing the meeting link, with my meeting slides and instructions upon payment. 
+I'm excited to invite you to my online meeting {event_title} on {event_date}.
+I look forward to sharing the meeting link, with my meeting slides and instructions upon payment. 
 
-            Price: {event_price} {event_currency}  
-            Payment address : {host_iban}. 
-            Comment : {comment}
+Price: {event_price} {event_currency}  
+Payment address : {host_iban}. 
+Comment : {comment}
 
-            After payment is received, your attendance will be confirmed by email and appear on the website in your dashboard. 
-            If you have any questions, don't hesitate to contact me.
+After payment is received, your attendance will be confirmed by email and appear on the website in your dashboard. 
+If you have any questions, don't hesitate to contact me.
 
-            With best regards,  
-            {host_name}  
-            {host_email}{% endif %}</textarea>
-            </div>
+With best regards,  
+{host_name}  
+{host_email}{% endif %}
+                </textarea>
+                    </div>
 
-            <hr>
-            <h3>My default 'confirmation' email</h3>
-            <br>
+                    <hr>
+                    <h3>My default 'confirmation' email</h3>
+                    <br>
 
             <!-- Confirmation Email Title -->
             <div class="mb-3">
@@ -153,27 +156,37 @@
                     id="confirmation_email_title" 
                     name="confirmation_email_title" 
                     rows="1" 
-                    required>{% if current_user.confirmation_email_title %}{{ current_user.confirmation_email_title | trim }}{% else %}Confirmation of your attendance for {event_title}{% endif %}</textarea>
+                    required>{% if current_user.confirmation_email_title %}{{ current_user.confirmation_email_title | trim }}{% else %}Confirmation of your attendance for {event_title} on {event_date}{% endif %}</textarea>
             </div>
 
-            <!-- Confirmation Email Body -->
-            <div class="mb-3">
-                <label for="confirmation_email_body" class="form-label">Confirmation Email Body</label>
-                <textarea 
-                    class="form-control" 
-                    id="confirmation_email_body" 
-                    name="confirmation_email_body" 
-                    rows="6" 
-                    required>{% if current_user.confirmation_email_body %}{{ current_user.confirmation_email_body}}{% else %}
-            Dear {event_user},
 
-            Your attendance for the online meeting {event_title} on {event_date} has been confirmed! I look forward to seeing you there.
+        <!-- Confirmation Email Body -->
+        <div class="mb-3">
+            <label for="confirmation_email_body" class="form-label">Confirmation Email Body</label>
+            <textarea 
+                class="form-control" 
+                id="confirmation_email_body" 
+                name="confirmation_email_body" 
+                rows="10" 
+                required>{% if current_user.confirmation_email_body %}{{ current_user.confirmation_email_body | safe }}{% else %}
+Dear {event_user},
 
-            Online meeting link: {event_meeting_url}
+Your attendance for the online meeting <b>{event_title}</b> on <b>{event_date}</b> has been confirmed! I look forward to seeing you there.
 
-            With best regards,  
-            {host_name}  
-            {host_email}{% endif %}</textarea>
+Add this event to your calendar using the links below:
+<ul>
+    <li><a href="{google_calendar_url}" target="_blank">[Add to Google Calendar]</a></li>
+    <li><a href="{outlook_calendar_url}" target="_blank">[Add to Outlook]</a></li>
+</ul>
+
+Online Meeting Link:
+<a href="{event_meeting_url}" target="_blank">{event_meeting_url}</a>
+
+With best regards,  
+<b>{host_name}</b><br>
+{host_email}
+                    {% endif %}
+                </textarea>
             </div>
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary">Save Settings</button>
@@ -302,6 +315,7 @@
                             type="checkbox" 
                             class="confirm-payment-checkbox" 
                             id="confirm-payment-checkbox-{{ row.attendee_id }}" 
+                            data-event-id="{{row.event_id}}"
                             data-attendee-id="{{ row.attendee_id }}" 
                             data-attendee-name="{{ row.attendee_name }}" 
                             data-attendee-email="{{ row.attendee_email }}" 

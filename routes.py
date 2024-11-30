@@ -21,8 +21,25 @@ def home():
     query = request.args.get("search", "")
     date_filter = request.args.get("dateFilter", "")  # Check if dateFilter parameter exists
 
-    # Fetch and sort events
-    events_query = Event.query
+    # Fetch all events
+    events_query = Event.query  # Fetch all events from the database
+
+    # Loop through each event
+    for event in events_query.all():
+        # Parse the event date
+        try:
+            # Ensure event.date is timezone-aware
+            event_date = event.date.astimezone(pytz.timezone(event.tz_name))
+            
+            # Compare event date with the current time in the same timezone
+            if event_date < datetime.now(pytz.timezone(event.tz_name)) and not event.is_closed:
+                event.is_closed = True  # Mark the event as closed
+                db.session.add(event)  # Add the updated event to the session
+        except Exception as e:
+            print(f"Error processing event timestamps /home {event.id}: {e}")
+
+    # Commit changes after the loop
+    db.session.commit()
 
     for event in events_query.all():
         # Count the number of attendees marked as attending
@@ -116,7 +133,7 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        flash(f"Account created for {username}! Your age is {user.age}.", "success")
+        flash(f"Account created for {username}! ", "success")  #Your age is {user.age}.
         return redirect(url_for('login'))
 
     return render_template("register.html")
@@ -147,9 +164,25 @@ def dashboard():
     view = request.args.get("view", "dashboard")
     date_filter = request.args.get("dateFilter", "")  # Ensure date_filter is always initialized
 
+    # Loop through each event to close if date and time are in the past
+    # Fetch all events
+    events_query = Event.query  # Fetch all events from the database
+    for event in events_query.all():
+        # Parse the event date
+        try:
+            # Ensure event.date is timezone-aware
+            event_date = event.date.astimezone(pytz.timezone(event.tz_name))
+            
+            # Compare event date with the current time in the same timezone
+            if event_date < datetime.now(pytz.timezone(event.tz_name)) and not event.is_closed:
+                event.is_closed = True  # Mark the event as closed
+                db.session.add(event)  # Add the updated event to the session
+        except Exception as e:
+            print(f"Error processing event timestamps /home {event.id}: {e}")
+
+
     # Query created events for the current user
     created_events_query = Event.query.filter_by(user_id=current_user.id)
-
     # Apply date filter
     if date_filter:
         try:
@@ -177,6 +210,7 @@ def dashboard():
     for event in created_events:
         for attendee in event.attendees:
             table_data.append({
+                "event_id" : event.id,
                 "event": event.title,
                 "date": event.date.strftime("%Y-%m-%d %H:%M %Z"),
                 "meeting_url": event.event_meeting_link,
@@ -466,34 +500,82 @@ def attend_event(event_id):
 @login_required
 def send_confirmation_email():
     data = request.get_json()
+    event_id = data.get("event_id")
     attendee_email = data.get("attendee_email")
     attendee_name = data.get("attendee_name")
     event_title = data.get("event_title")
-    event_date = data.get("event_date")
+    event_date = data.get("event_date")  # Assuming this is in string format
     event_meeting_url = data.get("event_meeting_url")
     host_email = data.get("host_email")
     confirmation_title = data.get("confirmation_title")
     confirmation_body = data.get("confirmation_body")
 
+    from dateutil import parser
+    from pytz import timezone
+
+    event = Event.query.get_or_404(event_id)
+    try:
+        # Ensure the event date is timezone-aware
+        selected_timezone = timezone(event.tz_name)
+        event_date = event.date.astimezone(selected_timezone)  # Convert to the event's timezone
+        event_end_date = event_date + timedelta(hours=1)  # Assume the event lasts 1 hour
+    except Exception as e:
+        print(f"Error parsing event date: {e}")
+        return jsonify({"success": False, "message": "Invalid event date format"}), 400
+
+
+
+    from urllib.parse import urlencode
+    # Generate Google Calendar link
+    google_calendar_url = (
+        "https://calendar.google.com/calendar/r/eventedit?" +
+        urlencode({
+            "text": event.title,
+            "dates": f"{event_date.strftime('%Y%m%dT%H%M%S')}/{event_end_date.strftime('%Y%m%dT%H%M%S')}",
+            "details": f"Meeting Link: {event.event_meeting_link} - {event.description}",
+            "location": "Online"
+        })
+    )
+
+    # Generate Outlook Calendar link
+    outlook_calendar_url = (
+        "https://outlook.live.com/calendar/0/deeplink/compose?" +
+        urlencode({
+            "path": "/calendar/action/compose",
+            "subject": event.title,
+            "startdt": event_date.strftime('%Y-%m-%dT%H:%M:%S'),
+            "enddt": event_end_date.strftime('%Y-%m-%dT%H:%M:%S'),
+            "body": f"Meeting Link: {event.event_meeting_link} - {event.description}",
+        })
+    )
+
     # Replace placeholders in the email title and body
-    # Prepare placeholders for email
     placeholders = {
         "{event_user}": attendee_name,
         "{event_title}": event_title,
-        "{event_date}": event_date,
+        "{event_date}": event_date.strftime('%Y-%m-%d %H:%M:%S'),
         "{event_meeting_url}": event_meeting_url,
         "{host_name}": current_user.username,
         "{host_email}": current_user.email,
+        "{google_calendar_url}": google_calendar_url,
+        "{outlook_calendar_url}": outlook_calendar_url,
     }
 
     for placeholder, value in placeholders.items():
         confirmation_title = confirmation_title.replace(placeholder, str(value))
         confirmation_body = confirmation_body.replace(placeholder, str(value))
 
-    # Find the attendee in the database
+    # Create HTML body for the email
+    confirmation_body_html = confirmation_body  # Already HTML-formatted from textarea
+
+    # Find the attendee
+    user = User.query.filter_by(email=attendee_email).first()
+    if not user:
+        return jsonify({"success": False, "message": "User not found"}), 404
+
     attendee = Attendee.query.join(Event).filter(
         Event.title == event_title,
-        Attendee.user_id == User.query.filter_by(email=attendee_email).first().id
+        Attendee.user_id == user.id
     ).first()
 
     if not attendee:
@@ -501,16 +583,20 @@ def send_confirmation_email():
 
     # Send the email
     msg = Message(confirmation_title, sender=host_email, recipients=[attendee_email])
-    msg.body = confirmation_body
+    msg.body = confirmation_body  # Plain text fallback
+    msg.html = confirmation_body_html  # Use the HTML version
+
 
     try:
         mail.send(msg)
-        attendee.attending = True  # Mark the attendee as confirmed # Mark the email as sent
+        attendee.attending = True
         db.session.commit()
         return jsonify({"success": True})
     except Exception as e:
         print(f"Failed to send email: {e}")
         return jsonify({"success": False}), 500
+
+
     
 
 

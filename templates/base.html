@@ -76,7 +76,7 @@
 
 
     <!-- Main Content -->
-    <div class="container py-5">
+    <div class="container-main py-5 text-center">
         {% block content %}{% endblock %}
     </div>
 
@@ -174,67 +174,88 @@
 
 
 
-    // CHECKBOX FOR PAYMENT CONFIRMATION - SEND MAIL WITH MEETING URL
-    document.addEventListener("DOMContentLoaded", function () {
-        // Handle checkbox click for sending the confirmation email
-        document.querySelectorAll(".confirm-payment-checkbox").forEach(checkbox => {
-            checkbox.addEventListener("change", function () {
-                if (this.checked) {
-                    // Retrieve data attributes
-                    const attendeeId = this.dataset.attendeeId;
-                    const attendeeName = this.dataset.attendeeName;
-                    const attendeeEmail = this.dataset.attendeeEmail;
-                    const eventMeetingUrl = this.dataset.eventMeetingUrl;
-                    const eventTitle = this.dataset.eventTitle;
-                    const eventDate = this.dataset.eventDate;
-                    const hostEmail = this.dataset.hostEmail;
-                    const confirmationTitle = this.dataset.confirmationTitle;
-                    const confirmationBody = this.dataset.confirmationBody;
+        // CHECKBOX FOR PAYMENT CONFIRMATION - SEND MAIL WITH MEETING URL
+        document.addEventListener("DOMContentLoaded", function () {
+            // Handle checkbox click for sending the confirmation email
+            document.querySelectorAll(".confirm-payment-checkbox").forEach(checkbox => {
+                checkbox.addEventListener("change", function () {
+                    if (this.checked) {
+                        // Retrieve data attributes
+                        const eventId = this.dataset.eventId;
+                        const attendeeId = this.dataset.attendeeId;
+                        const attendeeName = this.dataset.attendeeName;
+                        const attendeeEmail = this.dataset.attendeeEmail;
+                        const eventMeetingUrl = this.dataset.eventMeetingUrl;
+                        const eventTitle = this.dataset.eventTitle;
+                        const eventDate = this.dataset.eventDate;
+                        const hostEmail = this.dataset.hostEmail;
+                        const confirmationTitle = this.dataset.confirmationTitle;
+                        const confirmationBody = this.dataset.confirmationBody;
 
-                    // Ask for confirmation
-                    const confirmSend = confirm(`Send meeting link and instructions to ${attendeeEmail}?`);
-                    if (confirmSend) {
-                        // Send an AJAX POST request to send the email
-                        fetch('/send_confirmation_email', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                attendee_id: attendeeId,
-                                attendee_name: attendeeName,
-                                attendee_email: attendeeEmail,
-                                event_meeting_url : eventMeetingUrl,
-                                event_title: eventTitle,
-                                event_date: eventDate,
-                                host_email: hostEmail,
-                                confirmation_title: confirmationTitle,
-                                confirmation_body: confirmationBody,
-                            }),
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                alert("Confirmation email sent successfully!");
-                                location.reload(); // Refresh the page
-                            } else {
+                        // Log data for debugging
+                        console.log("Sending email with the following data:", {
+                            attendee_id: attendeeId,
+                            attendee_name: attendeeName,
+                            attendee_email: attendeeEmail,
+                            event_meeting_url: eventMeetingUrl,
+                            event_title: eventTitle,
+                            event_date: eventDate,
+                            host_email: hostEmail,
+                            confirmation_title: confirmationTitle,
+                            confirmation_body: confirmationBody,
+                        });
+
+                        // Ask for confirmation
+                        const confirmSend = confirm(`Send meeting link and instructions to ${attendeeEmail}?`);
+                        if (confirmSend) {
+                            this.disabled = true; // Temporarily disable checkbox during request
+
+                            // Send an AJAX POST request to send the email
+                            fetch('/send_confirmation_email', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    event_id: eventId,
+                                    attendee_id: attendeeId,
+                                    attendee_name: attendeeName,
+                                    attendee_email: attendeeEmail,
+                                    event_meeting_url: eventMeetingUrl,
+                                    event_title: eventTitle,
+                                    event_date: eventDate,
+                                    host_email: hostEmail,
+                                    confirmation_title: confirmationTitle,
+                                    confirmation_body: confirmationBody,
+                                }),
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    alert("Confirmation email sent successfully!");
+                                    location.reload(); // Refresh the page
+                                } else {
+                                    alert("Failed to send the email. Please try again.");
+                                    this.checked = false; // Uncheck the box if sending failed
+                                }
+                            })
+                            .catch(error => {
+                                console.error("Error:", error);
                                 alert("Failed to send the email. Please try again.");
                                 this.checked = false; // Uncheck the box if sending failed
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error:", error);
-                            alert("Failed to send the email. Please try again.");
-                            this.checked = false; // Uncheck the box if sending failed
-                        });
-                    } else {
-                        // Uncheck the box if the user cancels
-                        this.checked = false;
+                            })
+                            .finally(() => {
+                                this.disabled = false; // Re-enable checkbox
+                            });
+                        } else {
+                            // Uncheck the box if the user cancels
+                            this.checked = false;
+                        }
                     }
-                }
+                });
             });
         });
-    });
+
 
 
     function confirmCloseEvent(closeUrl, eventId) {
@@ -334,41 +355,48 @@
         // Add event listener to the "Reset to System Default" button
         document.getElementById("resetToDefault").addEventListener("click", function () {
             // Reset Payment Email Title
-            document.getElementById("payment_email_title").innerHTML = `Registration request for {event_title} Online meeting {event_date}`;
+            document.getElementById("payment_email_title").innerHTML = `Registration request for {event_title} Online meeting on {event_date}`;
 
             // Reset Payment Instructions Email Body
             document.getElementById("payment_email_body").innerHTML = `
-                Dear {event_user},
+Dear {event_user},
 
-                I'm excited to invite you to my online meeting {event_title} on {event_date}.
-                I look forward to sharing the meeting link, with my meeting slides and instructions upon payment. 
-                
-                Price: {event_price} {event_currency}  
-                Payment address : {host_iban}. 
-                Comment : {comment}
-                
-                After payment is received, your attendance will be confirmed by email and appear on the website in your dashboard. 
-                If you have any questions, don't hesitate to contact me.
-                
-                With best regards,  
-                {host_name}  
-                {host_email}
+I'm excited to invite you to my online meeting {event_title} on {event_date}.
+I look forward to sharing the meeting link, with my meeting slides and instructions upon payment. 
+
+Price: {event_price} {event_currency}  
+Payment address : {host_iban}. 
+Comment : {comment}
+
+After payment is received, your attendance will be confirmed by email and appear on the website in your dashboard. 
+If you have any questions, don't hesitate to contact me.
+
+With best regards,  
+{host_name}  
+{host_email}
             `;
 
             // Reset Confirmation Email Title
-            document.getElementById("confirmation_email_title").innerHTML = `Confirmation of your attendance for {event_title}`;
+            document.getElementById("confirmation_email_title").innerHTML = `Confirmation of your attendance for {event_title} on {event_date}`;
 
             // Reset Confirmation Email Body
             document.getElementById("confirmation_email_body").innerHTML = `
-                Dear {event_user},
+Dear {event_user},
 
-                Your attendance for the online meeting {event_title} on {event_date} has been confirmed! I look forward to seeing you there.
+Your attendance for the online meeting <b>{event_title}</b> on <b>{event_date}</b> has been confirmed! I look forward to seeing you there.
 
-                Online meeting link: {event_meeting_url}
+Add this event to your calendar using the links below:
+<ul>
+    <li><a href="{google_calendar_url}" target="_blank"></a>[Add to Google Calendar]</a></li>
+    <li><a href="{outlook_calendar_url}" target="_blank">[Add to Outlook]</a></li>
+</ul>
 
-                With best regards,  
-                {host_name}  
-                {host_email}
+Online Meeting Link:
+<a href="{event_meeting_url}" target="_blank">{event_meeting_url}</a>
+
+With best regards,  
+<b>{host_name}</b><br>
+{host_email}
             `;
         });
     });

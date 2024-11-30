@@ -11,6 +11,7 @@ body {
 .navbar-dark .navbar-nav .nav-link {
     color: white;
     font-weight: bold;
+    margin: 0 auto;
 }
 
 .navbar-dark .navbar-nav .nav-link:hover {
@@ -20,12 +21,19 @@ body {
 /* Search Bar Container */
 .search-container {
     color: white;
-    padding: 15px 0;
-}
-
-.search-container .form-control {
+    padding: 15px 15px;
+    width: 90%;
+    text-align: center;
+    align-items: center;
+    margin: 0 auto;
     max-width: 500px;
 }
+
+.form-control {
+    max-width: 500px; 
+    margin: 0 auto;
+}
+
 
 h2 {
     font-size: 1.5rem;
@@ -34,11 +42,52 @@ h2 {
     margin-top: 50px;
 }
 
+
+/* Container Styling */
+.container-main {
+    max-width: 100%; /* Take the full width on smaller screens */
+    width: 90%; /* Keep cards centered with padding */
+    margin: 0 auto;
+    padding: 5px 5px;
+    align-items: center;
+}
+
+/* Row and Card Layout */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px; /* Space between cards */
+    justify-content: center; /* Center cards in the row */
+}
+
+/* Event Card Styling */
+.event-card {
+    flex: 1 1 calc(100% - 30px); /* Default: full width on mobile */
+    max-width: 400px; /* Wider on larger screens */
+    box-sizing: border-box;
+}
+
+@media (min-width: 576px) {
+    .event-card {
+        flex: 1 1 calc(50% - 30px); /* Two cards per row for tablets and up */
+    }
+}
+
+@media (min-width: 992px) {
+    .event-card {
+        flex: 1 1 calc(33.333% - 30px); /* Three cards per row on desktops */
+    }
+}
+
 /* Card Styling */
 .card {
     border: none;
     border-radius: 8px;
     overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 
     border-radius: 10px;
     background: white;
@@ -79,10 +128,37 @@ h2 {
 .card-footer {
     background-color: #f8f9fa;
     border-top: 1px solid #ddd;
+    margin-top: auto;
+    padding: 15px;
+    text-align: left;
+}
+
+.card-calendar-links {
+    margin-top: auto;
+    padding: 10px 0;
+    text-align: left;
 }
 
 .card-footer .btn {
     width: 100%;
+}
+
+.card-title-container {
+    display: flex;
+    justify-content: space-between; /* Align items to the left and right */
+    align-items: center; /* Vertically align the title and icon */
+}
+
+.card-title-container .card-title {
+    margin: 0; /* Remove any default margin for alignment */
+    font-size: 1.25rem; /* Adjust the size to fit your design */
+    flex: 1; /* Ensure the title takes up the available space */
+}
+
+.card-title-container .share-icon {
+    font-size: 1.5rem; /* Adjust the icon size */
+    color: #5cb85c; /* Match your design's color scheme */
+    cursor: pointer; /* Show a pointer cursor to indicate interactivity */
 }
 
 /* FORM STYLING */ 
@@ -241,23 +317,7 @@ h2 {
     display: none;
 }
 
-.card-title-container {
-    display: flex;
-    justify-content: space-between; /* Align items to the left and right */
-    align-items: center; /* Vertically align the title and icon */
-}
 
-.card-title-container .card-title {
-    margin: 0; /* Remove any default margin for alignment */
-    font-size: 1.25rem; /* Adjust the size to fit your design */
-    flex: 1; /* Ensure the title takes up the available space */
-}
-
-.card-title-container .share-icon {
-    font-size: 1.5rem; /* Adjust the icon size */
-    color: #5cb85c; /* Match your design's color scheme */
-    cursor: pointer; /* Show a pointer cursor to indicate interactivity */
-}
 
 /* Star Rating Container */
 .star-rating {
