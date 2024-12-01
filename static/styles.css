@@ -8,6 +8,19 @@ body {
 
 
 /* Navbar Styling */
+
+/* Navbar transition for scrolling behavior */
+.navbar {
+    transition: top 0.3s ease-in-out;
+}
+
+/* Navbar brand and toggle alignment */
+.navbar .container-fluid {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .navbar-dark .navbar-nav .nav-link {
     color: white;
     font-weight: bold;
@@ -16,6 +29,30 @@ body {
 
 .navbar-dark .navbar-nav .nav-link:hover {
     color: #5cb85c;
+}
+
+/* FILTERS event_list.html container */
+.filters-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px; /* Add spacing between each section */
+}
+
+.filters-container .btn-primary {
+    max-width: 250px;
+    font-size: 16px;
+}
+
+.filter-date {
+    text-align: center;
+}
+
+.search-bar {
+    max-width: 500px;
+    width: 100%;
+    margin: 0 auto;
 }
 
 /* Search Bar Container */
@@ -29,10 +66,51 @@ body {
     max-width: 500px;
 }
 
+@media (max-width: 768px) {
+    .filters-container {
+        gap: 10px; /* Reduce spacing for smaller screens */
+    }
+
+    .filters-container .btn-primary {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+
+    .filter-date input {
+        font-size: 14px;
+    }
+
+    .search-bar input,
+    .search-bar button {
+        font-size: 14px;
+    }
+}
+
+
+
+
+
+/* FORM STYLING */ 
+.form-label {
+    font-weight: bold;
+    color: #555;
+}
+
 .form-control {
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 14px;
     max-width: 500px; 
     margin: 0 auto;
 }
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
+}
+
+
+
 
 
 h2 {
@@ -62,7 +140,6 @@ h2 {
 
 /* Event Card Styling */
 .event-card {
-    flex: 1 1 calc(100% - 30px); /* Default: full width on mobile */
     max-width: 400px; /* Wider on larger screens */
     box-sizing: border-box;
 }
@@ -131,12 +208,14 @@ h2 {
     margin-top: auto;
     padding: 15px;
     text-align: left;
+    
 }
 
 .card-calendar-links {
     margin-top: auto;
     padding: 10px 0;
     text-align: left;
+    align-items: left;
 }
 
 .card-footer .btn {
@@ -161,22 +240,6 @@ h2 {
     cursor: pointer; /* Show a pointer cursor to indicate interactivity */
 }
 
-/* FORM STYLING */ 
-.form-label {
-    font-weight: bold;
-    color: #555;
-}
-
-.form-control {
-    border-radius: 5px;
-    padding: 10px;
-    font-size: 14px;
-}
-
-.form-control:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
-}
 
 
 

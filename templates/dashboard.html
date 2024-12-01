@@ -218,7 +218,7 @@ With best regards,
                 value="{{ date_filter }}">  <!-- Pre-fill date filter if applied -->
         </div>
         
-        <div class="row row-cols-1 row-cols-md-2 g-4">
+        <div class="row row-cols-1 row-cols-md-3 g-4">
             {% for event in created_events %}
             <div class="col">
                 <div class="card h-100 shadow">
@@ -232,7 +232,16 @@ With best regards,
                 {% endif %}
                     <div class="card-body">
                         <h5 class="card-title">{{ event.title }}</h5>
-                        <p class="card-text">{{ event.description }}</p>
+                        <p class="card-text">
+                            <small>
+                                <span class="description" id="description-{{ event.id }}">
+                                    {{ event.description[:250] }}{% if event.description|length > 100 %}... <a href="#" class="read-more" data-event-id="{{ event.id }}">Read more</a>{% endif %}
+                                </span>
+                                <span class="full-description" id="full-description-{{ event.id }}" style="display: none;">
+                                    {{ event.description }} <a href="#" class="read-less" data-event-id="{{ event.id }}">Read less</a>
+                                </span>
+                            </small>
+                        </p>
                         <p class="card-text"><small>Date: {{ event.date.strftime('%Y-%m-%d %H:%M %Z') }}</small></p>
                         <p class="card-text"><small>Price: {{ event.price }} {{ event.currency }}</small></p>
                         <p class="card-text"><small>Attendees: {{ event.attendees|selectattr('attending', 'equalto', True)|list|length }} / {{ event.max_attendees }}</small></p>
