@@ -44,7 +44,7 @@
 </div>
 <div class="mb-3">
     <label for="event_language" class="form-label">Event Language</label>
-    <select class="form-select" id="event_language" name="event_language" required>
+    <select class="form-control" id="event_language" name="event_language" required>
         {% if current_user.preferred_language %}
             <option value="{{ current_user.preferred_language }}" selected>
                 {{ current_user.preferred_language }}

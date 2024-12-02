@@ -4,8 +4,13 @@ body {
     background-color: #f4f4f9; /* #f8f9fa; */
     margin: 0;
     padding: 0;
+    padding-top: 70px; /* Adjust this value based on the actual height of your navbar */
 }
 
+
+h1 {
+    margin-top: 20px;
+}
 
 /* Navbar Styling */
 
@@ -14,6 +19,8 @@ body {
     transition: top 0.3s ease-in-out;
 }
 
+
+
 /* Navbar brand and toggle alignment */
 .navbar .container-fluid {
     display: flex;
@@ -21,10 +28,15 @@ body {
     justify-content: space-between;
 }
 
+
 .navbar-dark .navbar-nav .nav-link {
     color: white;
     font-weight: bold;
     margin: 0 auto;
+}
+
+.navbar-brand:hover {
+    color: #5cb85c;
 }
 
 .navbar-dark .navbar-nav .nav-link:hover {
@@ -38,6 +50,14 @@ body {
     align-items: center;
     justify-content: center;
     gap: 15px; /* Add spacing between each section */
+    height: 100%; /* Ensure it matches the height of the navigation bar */
+    padding:2px;
+}
+
+#filters-container input,
+#filters-container button,
+#filters-container a {
+    vertical-align: middle; /* Ensure inline elements are vertically aligned */
 }
 
 .filters-container .btn-primary {
@@ -69,6 +89,8 @@ body {
 @media (max-width: 768px) {
     .filters-container {
         gap: 10px; /* Reduce spacing for smaller screens */
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .filters-container .btn-primary {
@@ -127,7 +149,7 @@ h2 {
     width: 90%; /* Keep cards centered with padding */
     margin: 0 auto;
     padding: 5px 5px;
-    align-items: center;
+
 }
 
 /* Row and Card Layout */
@@ -276,6 +298,7 @@ h2 {
     border: 1px solid transparent;
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 10px; /* Ensure flash messages have a small gap below the navbar */
 }
 
 .alert-success {

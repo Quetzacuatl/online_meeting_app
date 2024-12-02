@@ -7,6 +7,8 @@ from sqlalchemy.orm import relationship
 from .app import db
 from pytz import timezone
 from sqlalchemy.types import TIMESTAMP
+from itsdangerous import URLSafeTimedSerializer
+from flask import current_app
 
 # User model
 class User(db.Model, UserMixin):
@@ -41,6 +43,19 @@ class User(db.Model, UserMixin):
         return today.year - self.birthdate.year - (
             (today.month, today.day) < (self.birthdate.month, self.birthdate.day)
         )
+    
+    def get_reset_token(self, expires_in=3600):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        return s.dumps({'user_id': self.id})
+
+    @staticmethod
+    def verify_reset_token(token):
+        s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            user_id = s.loads(token, max_age=3600)['user_id']
+        except Exception:
+            return None
+        return User.query.get(user_id)
 
 # Event model
 class Event(db.Model):

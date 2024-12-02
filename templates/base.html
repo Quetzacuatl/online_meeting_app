@@ -19,10 +19,13 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 </head>
 <body>
+
+
         <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="navbar">
             <div class="container-fluid">
-                <a class="navbar-brand" href="{{ url_for('home') }}" style="padding-left:10px;">MOMA - Register to Online meetings</a>
+
+                <a class="navbar-brand" href="{{ url_for('home') }}" style="padding-left:15px;">moma - register to online meetings</a>
         
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -30,20 +33,12 @@
         
                 <div class="collapse navbar-collapse" id="navbarNav">
 
-                        <!-- Search Bar -->
-                        <div class="search-bar">
-                            <form method="GET" action="{{ url_for('home') }}" class="d-flex justify-content-center">
-                                <input type="text" name="search" class="form-control me-2" placeholder="Search events..." value="{{ query }}" style="max-width: 400px;">
-                                <button type="submit" class="btn btn-success">Search</button>
-                            </form>
-                        </div>
-
 
                     <!-- Menu -->
                     <ul class="navbar-nav ms-auto">
                         {% if current_user.is_authenticated %}
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
+                                <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Host-Dashboard</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -62,6 +57,7 @@
         </nav>
         
 
+        
 
         <!-- Flash Messages -->
         <div class="container mt-4">
@@ -88,6 +84,28 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+
+
+        //click on host name
+            document.addEventListener("DOMContentLoaded", function () {
+            // Handle clicking on host name
+            document.querySelectorAll(".host-filter-link").forEach(link => {
+                link.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    const host = this.dataset.host;
+
+                    // Update URL to filter events by host
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("search", `host:${host}`);
+                    window.location.href = url.toString();
+                });
+            });
+        });
+
+
+
+
+
         function copyShareURL(url) {
             // Check if the Clipboard API is supported
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -295,22 +313,28 @@
     }
 
 
+    //Dynamic navbar height 
+    document.addEventListener("DOMContentLoaded", function () {
+    const navbar = document.querySelector(".navbar");
+    const body = document.querySelector("body");
+
+    if (navbar) {
+        // Get the height of the navbar
+        const navbarHeight = navbar.offsetHeight;
+        // Set top padding to the body to prevent overlap
+        body.style.paddingTop = `${navbarHeight}px`;
+    }
+});
+
+
     // SEE EVENTS THAT I AM ATTENDING (event_list.html)
     function filterMyAttending() {
-        // Get all event cards
-        const eventCards = document.querySelectorAll(".col[id^='event-']");
-        
-        // Loop through the cards
-        eventCards.forEach(card => {
-            // Check if the card has an attendee count greater than 0 and the user is marked as attending or pending
-            const attendingInfo = card.querySelector(".attending-info");
-            if (attendingInfo && (attendingInfo.dataset.attending === "true" || attendingInfo.dataset.pending === "true")) {
-                card.style.display = ""; // Show the card
-            } else {
-                card.style.display = "none"; // Hide the card
-            }
-        });
-    }
+        // Use URL parameters to filter on the backend
+        const url = new URL(window.location.href);
+        url.searchParams.set('filter', 'attending'); // Add a query parameter
+        window.location.href = url.toString(); // Reload the page with the updated URL
+}
+
 
     // DELETE EVENT
     function confirmDelete(deleteUrl) {
@@ -397,12 +421,12 @@ Add this event to your calendar using the links below:
     <li><a href="{outlook_calendar_url}" target="_blank">[Add to Outlook]</a></li>
 </ul>
 
-Online Meeting Link:
-<a href="{event_meeting_url}" target="_blank">{event_meeting_url}</a>
+<br>Online Meeting Link:
+<br><a href="{event_meeting_url}" target="_blank">{event_meeting_url}</a>
 
-With best regards,  
-<b>{host_name}</b><br>
-{host_email}
+<br>With best regards,  
+<br><b>{host_name}</b><br>
+<br>{host_email}
             `;
         });
     });

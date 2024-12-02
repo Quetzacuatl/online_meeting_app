@@ -8,58 +8,64 @@ from pytz import timezone, all_timezones
 from datetime import datetime, timedelta
 from flask_mail import Message
 from urllib.parse import urlparse
-from sqlalchemy import cast, String
+from sqlalchemy import cast, String, func
 from sqlalchemy import asc, desc
+from dotenv import load_dotenv
+import os
 
 def is_valid_url(url):
     parsed = urlparse(url)
     return bool(parsed.netloc) and bool(parsed.scheme)
+
+def send_reset_email(user):
+    token = user.get_reset_token()
+    msg = Message("Password Reset Request",
+                  sender=current_app.config['MAIL_DEFAULT_SENDER'],
+                  recipients=[user.email])
+    msg.body = f"""To reset your password, visit the following link:
+{url_for('reset_token', token=token, _external=True)}
+
+If you did not make this request, simply ignore this email and no changes will be made.
+"""
+    mail.send(msg)
+
 
 @current_app.route("/")
 def home():
     # Retrieve search and date filter parameters
     query = request.args.get("search", "")
     date_filter = request.args.get("dateFilter", "")  # Check if dateFilter parameter exists
+    filter_param = request.args.get("filter", "")  # Get 'filter' parameter
 
-    # Fetch all events
-    events_query = Event.query  # Fetch all events from the database
+    # Fetch all events as a base query
+    events_query = Event.query
 
-    # Loop through each event
+    # Mark events as closed if needed
     for event in events_query.all():
-        # Parse the event date
         try:
             # Ensure event.date is timezone-aware
             event_date = event.date.astimezone(pytz.timezone(event.tz_name))
-            
+
             # Compare event date with the current time in the same timezone
             if event_date < datetime.now(pytz.timezone(event.tz_name)) and not event.is_closed:
                 event.is_closed = True  # Mark the event as closed
                 db.session.add(event)  # Add the updated event to the session
         except Exception as e:
-            print(f"Error processing event timestamps /home {event.id}: {e}")
+            print(f"Error processing event timestamps for event {event.id}: {e}")
 
-    # Commit changes after the loop
     db.session.commit()
-
-    for event in events_query.all():
-        # Count the number of attendees marked as attending
-        attending_count = len([attendee for attendee in event.attendees if attendee.attending])
-
-        # Check if the event should be closed
-        if attending_count >= event.max_attendees and not event.is_closed:
-            event.is_closed = True
-            db.session.commit()
 
     # Apply filters based on query or date filter
     if query.startswith("host:"):
         host_username = query.split("host:")[1]
         events_query = events_query.join(User).filter(User.username == host_username)
     elif query:
+        query_lower = query.lower()  # Convert query to lowercase
         events_query = events_query.join(User).filter(
-            Event.title.contains(query) |
-            Event.description.contains(query) |
-            Event.event_language.contains(query) |
-            User.username.contains(query) |
+            func.lower(Event.title).contains(query_lower) |
+            func.lower(Event.description).contains(query_lower) |
+            func.lower(Event.event_language).contains(query_lower) |
+            func.lower(User.username).contains(query_lower) |
             cast(Event.date, String).contains(query)  # Cast Event.date to string
         )
     elif date_filter:
@@ -72,6 +78,12 @@ def home():
         except ValueError:
             # If dateFilter is invalid, continue without date filtering
             pass
+
+    if filter_param == "attending" and current_user.is_authenticated:
+        events_query = events_query.join(Attendee).filter(
+            Attendee.user_id == current_user.id,
+            Attendee.attending == True
+        )
 
     # Sort events: Open events first by `is_closed`, then by date (ascending)
     events = events_query.order_by(
@@ -98,8 +110,6 @@ def home():
         timedelta=timedelta,
         pytz=pytz
     )
-
-
 
 
 
@@ -151,12 +161,62 @@ def login():
         flash("Invalid credentials.", "danger")
     return render_template("login.html")
 
+
+
 @current_app.route("/logout")
 @login_required
 def logout():
     logout_user()
     flash("Logged out successfully.", "info")
     return redirect(url_for("home"))
+
+
+@current_app.route('/reset_request', methods=['GET', 'POST'])
+def reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        if user:
+            send_reset_email(user)  # Sends the email with a reset token
+            flash('A password reset email has been sent.', 'info')
+        else:
+            flash('No account found with that email.', 'danger')
+        return redirect(url_for('login'))
+    
+    return render_template('reset_request.html')  # Form to enter email
+
+
+
+@current_app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_token(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+
+    # Verify the token
+    user = User.verify_reset_token(token)
+    if not user:
+        flash('The reset token is invalid or has expired.', 'danger')
+        return redirect(url_for('reset_request'))
+
+    # Handle password reset form submission
+    if request.method == 'POST':
+        new_password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if new_password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+        else:
+            user.password = generate_password_hash(new_password)
+            db.session.commit()
+            flash('Your password has been reset. You can now log in.', 'success')
+            return redirect(url_for('login'))
+
+    return render_template('reset_token.html')  # Form for entering new password
+
+
 
 @current_app.route("/dashboard")
 @login_required
@@ -239,6 +299,8 @@ def dashboard():
         preferred_timezone=preferred_timezone,
         date_filter=date_filter,  # Pass the date filter to the template
     )
+
+
 
 
 @current_app.route("/edit_profile", methods=["POST"])
@@ -478,7 +540,7 @@ def attend_event(event_id):
         payment_email_body = payment_email_body.replace(placeholder, str(value))
 
     # Configure the email
-    msg = Message(payment_email_title, sender=host_email, recipients=[user_email])
+    msg = Message(payment_email_title, sender=host_email, recipients=[user_email], cc=[host_email])
     msg.body = payment_email_body
 
     try:

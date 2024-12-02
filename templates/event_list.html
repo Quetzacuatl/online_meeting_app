@@ -5,22 +5,34 @@
 {% block content %}
 
 
-<div class="filters-container text-center mb-4">
-        <!-- Filter meetings I'm attending -->
-        {% if current_user.is_authenticated %}
-        <a href="#" class="btn btn-primary mb-3" onclick="filterMyAttending()">See the meetings I am Attending</a>
-        {% endif %}
-    
-        <!-- Filter by Date -->
-        <div class="filter-date mb-3">
-            <label for="dateFilter" class="me-2 d-block">Filter by Date:</label>
-            <input type="text" id="dateFilter" class="form-control mx-auto" style="max-width: 400px;" placeholder="Select a date">
-        </div>
-</div>
+
 
 <h1 class="text-center mb-4">Online meetings</h1>
 
 
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    <div id="filters-container" class="col d-flex justify-content-between align-items-center flex-wrap mb-3">
+        <!-- Search Bar -->
+        <form method="GET" action="{{ url_for('home') }}" class="d-flex align-items-center me-3" >
+            <input type="text" name="search" class="form-control me-2" placeholder="Search events..." value="{{ query }}" >
+            <button type="submit" class="btn btn-success">Search</button>
+        </form>
+
+        <!-- Filter by Date -->
+        <div class="d-flex align-items-center me-3" >
+
+            <input type="text" id="dateFilter" class="form-control me-2" placeholder="Select a date" >
+
+            <!-- Filter meetings I'm attending -->
+        <!-- Filter meetings I'm attending -->
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('home', filter='attending') }}" class="btn btn-success w-100">My meetings</a>
+        {% endif %}
+
+        </div>
+        
+    </div>
+</div>
 
 <!-- host statistics : users can rate -->
 {% if current_user.is_authenticated and attendee and attendee.attending %}
@@ -56,11 +68,10 @@
                 <p class="card-text">
                     <small>
                         Host: 
-                        <a href="{{ url_for('host_profile', host_username=event.organizer.username) }}">{{ event.organizer.username }}</a>
-                    </small>
-                    <small>
-                        Host: 
                         <a href="{{ url_for('home', search='host:' ~ event.organizer.username) }}">{{ event.organizer.username }}</a>
+                    </small>
+                    <small>                        
+                        <a href="{{ url_for('host_profile', host_username=event.organizer.username) }}">Rating </a>
                     </small>
                 </p>
                 <p class="card-text">
@@ -92,6 +103,13 @@
                 {% endif %}
             </div>
             
+            <!-- Hidden indicator for filter functionality -->
+            <p class="attending-info" 
+            data-attending="{{ 'true' if event.is_attending else 'false' }}" 
+            data-pending="{{ 'true' if event.attendees|selectattr('user_id', 'equalto', current_user.id)|selectattr('attending', 'equalto', False)|list|length > 0 else 'false' }}" 
+            hidden>
+
+
             <!-- Calendar Links Section -->
             {% if current_user.is_authenticated and attendee and attendee.attending %}
             <div class="card-calendar-links text-center">
