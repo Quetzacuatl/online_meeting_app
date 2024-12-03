@@ -64,6 +64,7 @@ class Event(db.Model):
     description = db.Column(Text, nullable=False)
     date = db.Column(TIMESTAMP(timezone=True), nullable=False)  # Use timezone-aware DateTime
     tz_name = db.Column(String(50), nullable=False, server_default='UTC') # Timezone, e.g., "Europe/Brussels"
+    duration = db.Column(db.Integer, nullable=False, default=60)  # Duration in minutes
     price = db.Column(Integer, nullable=False)
     currency = db.Column(String(10), nullable=False)
     event_language = db.Column(String(50), nullable=False)  # New field for language

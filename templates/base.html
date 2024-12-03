@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
 </head>
 <body>
 
@@ -33,12 +34,15 @@
         
                 <div class="collapse navbar-collapse" id="navbarNav">
 
-
                     <!-- Menu -->
                     <ul class="navbar-nav ms-auto">
                         {% if current_user.is_authenticated %}
                             <li class="nav-item">
-                                <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Host-Dashboard</a>
+                                <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Host-Dashboard
+                                    {% if unchecked_confirmations > 0 %}
+                                    <span class="badge bg-danger ms-1">{{ unchecked_confirmations }}</span>
+                                    {% endif %}
+                                </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -51,6 +55,7 @@
                                 <a class="nav-link" href="{{ url_for('register') }}">Register</a>
                             </li>
                         {% endif %}
+
                     </ul>
                 </div>
             </div>
@@ -173,18 +178,68 @@
         });
     }
 
+    //search input field dashboard attendee table
+    document.addEventListener("DOMContentLoaded", function () {
+    // Initialize DataTable
+    const table = $('#attendeeTable').DataTable();
+
+    // Add custom search logic
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+        const searchValue = table.search().toLowerCase(); // The search input value
+        if (!searchValue) {
+            return true; // No search term, show all rows
+        }
+
+        // Retrieve specific columns to search (adjust indexes based on your table structure)
+        const title = (data[0] || "").toLowerCase(); // Event Title (Column 0)
+        const description = (data[2] || "").toLowerCase(); // Description (Column 1)
+        const attendeeName = (data[4] || "").toLowerCase(); // Attendee Name (Column 4)
+        const paymentComment = (data[8] || "").toLowerCase(); // Payment Comment (Column 8)
+
+        // Check if the search value exists in any of the relevant fields
+        return (
+            title.includes(searchValue) ||
+            description.includes(searchValue) ||
+            attendeeName.includes(searchValue) ||
+            paymentComment.includes(searchValue)
+        );
+    });
+
+    // Re-draw table on search
+    $('#attendeeTable_filter input').on('keyup', function () {
+        table.draw();
+    });
+});
+
+
+
+
+
     // Dropdown filter for event title
+    // Dropdown filter for event title and date
     $('#eventFilter').on('change', function () {
-        const eventTitle = $(this).val();
-        const table = $('#attendeeTable').DataTable(); // Retrieve the initialized DataTable instance
-        if (eventTitle) {
-            table.column(0).search('^' + eventTitle + '$', true, false).draw(); // Exact match
+        const eventTitleWithDate = $(this).val(); // Get the selected value
+        const table = $('#attendeeTable').DataTable(); // Retrieve the DataTable instance
+
+        if (eventTitleWithDate) {
+            // Split the dropdown value into title and date parts
+            const [eventTitle, eventDate] = eventTitleWithDate.split(" | ");
+
+            // Filter on both title (column 0) and date (column 1)
+            table
+                .column(0) // Title column
+                .search(eventTitle ? '^' + $.fn.dataTable.util.escapeRegex(eventTitle) + '$' : '', true, false)
+                .column(1) // Date column
+                .search(eventDate ? '^' + $.fn.dataTable.util.escapeRegex(eventDate) + '$' : '', true, false)
+                .draw();
         } else {
-            table.column(0).search('').draw(); // Show all events if no title is selected
+            // Clear the filters if no value is selected
+            table.columns([0, 1]).search('').draw();
         }
     });
 
-    // Date filter
+
+    // Date filter for dashboard attendee table
     $('#dateFilter').on('input', function () {
         const dateValue = $(this).val();
         const table = $('#attendeeTable').DataTable(); // Retrieve the initialized DataTable instance
@@ -346,10 +401,14 @@
 
     //CALENDAR (home - event_list)
     document.addEventListener("DOMContentLoaded", function () {
+    // Get the selected date from the URL, if it exists
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedDate = urlParams.get('dateFilter') || new Date().toISOString().split('T')[0]; // Use today's date as fallback
+
     // Initialize Flatpickr
     flatpickr("#dateFilter", {
         dateFormat: "Y-m-d", // Ensure it matches the date format in your database
-        defaultDate: new Date(), // Default to today's date
+        defaultDate: selectedDate, // Use the selected date from the URL or today's date
         onChange: function (selectedDates, dateStr, instance) {
             // Redirect or filter events when a date is selected
             if (dateStr) {
@@ -360,6 +419,7 @@
         }
     });
 });
+
 
 
 
@@ -644,6 +704,27 @@ Add this event to your calendar using the links below:
                 });
             });
 
+
+
+            // Notifications number next to dashboard (navbar)
+            document.addEventListener("DOMContentLoaded", function () {
+            function updateNotificationCount() {
+                fetch("/get_unchecked_count")  // Create a route to return unchecked_confirmations count
+                    .then(response => response.json())
+                    .then(data => {
+                        const badge = document.querySelector(".badge");
+                        if (data.count > 0) {
+                            badge.textContent = data.count;
+                            badge.style.display = "inline";
+                        } else {
+                            badge.style.display = "none";
+                        }
+                    });
+            }
+
+            // Update every 30 seconds
+            setInterval(updateNotificationCount, 30000);
+        });
 
     </script>
 

@@ -13,6 +13,7 @@ from sqlalchemy import asc, desc
 from dotenv import load_dotenv
 import os
 
+
 def is_valid_url(url):
     parsed = urlparse(url)
     return bool(parsed.netloc) and bool(parsed.scheme)
@@ -36,6 +37,8 @@ def home():
     query = request.args.get("search", "")
     date_filter = request.args.get("dateFilter", "")  # Check if dateFilter parameter exists
     filter_param = request.args.get("filter", "")  # Get 'filter' parameter
+    # Count total registered users
+    total_users = User.query.count()
 
     # Fetch all events as a base query
     events_query = Event.query
@@ -45,7 +48,6 @@ def home():
         try:
             # Ensure event.date is timezone-aware
             event_date = event.date.astimezone(pytz.timezone(event.tz_name))
-
             # Compare event date with the current time in the same timezone
             if event_date < datetime.now(pytz.timezone(event.tz_name)) and not event.is_closed:
                 event.is_closed = True  # Mark the event as closed
@@ -91,6 +93,8 @@ def home():
         asc(Event.date)        # Earliest dates first for open events
     ).all()
 
+
+
     # Check attendance for the current user
     if current_user.is_authenticated:
         for event in events:
@@ -102,13 +106,30 @@ def home():
         for event in events:
             event.is_attending = False
 
+
+    # Calculate unchecked confirmations
+    if current_user.is_authenticated:
+        try:
+            unchecked_confirmations = db.session.query(Attendee).join(Event).filter(
+                Event.user_id == current_user.id,
+                Attendee.attending == False  # Adjust this condition based on your schema
+            ).count()
+        except Exception as e:
+            unchecked_confirmations = 0  # Default to 0 if an error occurs
+            print(f"Error calculating unchecked confirmations: {e}")  # Log the error for debugging
+    else:
+        unchecked_confirmations = 0
+
+
     return render_template(
         "event_list.html",
         events=events,
         query=query,
         datetime=datetime,
         timedelta=timedelta,
-        pytz=pytz
+        pytz=pytz,
+        total_users=total_users,
+        unchecked_confirmations=unchecked_confirmations
     )
 
 
@@ -223,6 +244,7 @@ def reset_token(token):
 def dashboard():
     view = request.args.get("view", "dashboard")
     date_filter = request.args.get("dateFilter", "")  # Ensure date_filter is always initialized
+    search_query = request.args.get("search", "").lower()
 
     # Loop through each event to close if date and time are in the past
     # Fetch all events
@@ -261,9 +283,30 @@ def dashboard():
 
     attending_events = Event.query.join(Attendee).filter(Attendee.user_id == current_user.id).all()
 
+    # Calculate unchecked confirmations
+    if current_user.is_authenticated:
+        try:
+            unchecked_confirmations = db.session.query(Attendee).join(Event).filter(
+                Event.user_id == current_user.id,
+                Attendee.attending == False  # Adjust this condition based on your schema
+            ).count()
+        except Exception as e:
+            unchecked_confirmations = 0  # Default to 0 if an error occurs
+            print(f"Error calculating unchecked confirmations: {e}")  # Log the error for debugging
+    else:
+        unchecked_confirmations = 0
+
+
     # Pass the list of timezones to the template
     timezones = all_timezones 
     preferred_timezone = current_user.preferred_timezone if current_user.preferred_timezone else 'UTC'
+    
+    # Filter created_events to only include events that are not closed
+    open_events = [event for event in created_events if not event.is_closed]
+
+    # Generate unique event titles with dates for the dropdown
+    unique_event_titles = {event.title + " | " + event.date.strftime("%Y-%m-%d %H:%M") for event in open_events}
+
 
     # Prepare data for the table
     table_data = []
@@ -272,7 +315,7 @@ def dashboard():
             table_data.append({
                 "event_id" : event.id,
                 "event": event.title,
-                "date": event.date.strftime("%Y-%m-%d %H:%M %Z"),
+                "date": event.date.strftime("%Y-%m-%d %H:%M"),
                 "meeting_url": event.event_meeting_link,
                 "attendee_name": attendee.user.username,
                 "attendee_email": attendee.user.email,
@@ -289,6 +332,7 @@ def dashboard():
                 "attending": attendee.attending,
             })
 
+
     return render_template(
         "dashboard.html",
         view=view,
@@ -298,6 +342,8 @@ def dashboard():
         timezones=timezones,
         preferred_timezone=preferred_timezone,
         date_filter=date_filter,  # Pass the date filter to the template
+        unique_event_titles=unique_event_titles,
+        unchecked_confirmations=unchecked_confirmations
     )
 
 
@@ -345,6 +391,7 @@ def create_event():
         date_str = request.form.get("date")
         hour_str = request.form.get("hour")
         tz_name = request.form.get("timezone")
+        duration = request.form.get("duration")
         price = request.form.get("event_price")
         currency = request.form.get("event_currency")
         paymentaddress = request.form.get("event_paymentaddress")
@@ -360,6 +407,14 @@ def create_event():
         # Validate all fields
         if not title or not description or not date_str or not hour_str or not tz_name or not price or not currency or not paymentaddress or not max_attendees or not event_language:
             flash("All fields are required.", "danger")
+            return redirect(url_for("dashboard", view="create_event"))
+        
+        try:
+            duration = int(duration)
+            if duration <= 0:
+                raise ValueError
+        except ValueError:
+            flash("Duration must be a positive integer.", "danger")
             return redirect(url_for("dashboard", view="create_event"))
         
         # Combine date and hour into a single datetime object
@@ -406,6 +461,7 @@ def create_event():
             description=description,
             date=event_date,
             tz_name=tz_name,     # Store original timezone
+            duration=duration, 
             price=price,
             currency=currency,
             event_language=event_language,  # Save language
@@ -545,7 +601,7 @@ def attend_event(event_id):
 
     try:
         mail.send(msg)
-        flash("A payment instruction email has been sent to your email address.", "success")
+        flash("(check SPAM folder : A payment instruction email has been sent to your email address.", "success")
     except Exception as e:
         flash("Failed to send email. Please try again later.", "danger")
         print(f"Email sending failed: {e}")
@@ -586,14 +642,15 @@ def send_confirmation_email():
         return jsonify({"success": False, "message": "Invalid event date format"}), 400
 
 
-
+    # Calculate the end time using the duration
+    event_end_date = event.date + timedelta(minutes=event.duration)
     from urllib.parse import urlencode
     # Generate Google Calendar link
     google_calendar_url = (
         "https://calendar.google.com/calendar/r/eventedit?" +
         urlencode({
             "text": event.title,
-            "dates": f"{event_date.strftime('%Y%m%dT%H%M%S')}/{event_end_date.strftime('%Y%m%dT%H%M%S')}",
+            "dates": f"{event.date.strftime('%Y%m%dT%H%M%S')}/{event_end_date.strftime('%Y%m%dT%H%M%S')}",
             "details": f"Meeting Link: {event.event_meeting_link} - {event.description}",
             "location": "Online"
         })
@@ -605,7 +662,7 @@ def send_confirmation_email():
         urlencode({
             "path": "/calendar/action/compose",
             "subject": event.title,
-            "startdt": event_date.strftime('%Y-%m-%dT%H:%M:%S'),
+            "startdt": event.date.strftime('%Y-%m-%dT%H:%M:%S'),
             "enddt": event_end_date.strftime('%Y-%m-%dT%H:%M:%S'),
             "body": f"Meeting Link: {event.event_meeting_link} - {event.description}",
         })
@@ -704,13 +761,16 @@ def delete_event(event_id):
 
 
 from flask import Response
+from datetime import timedelta
 
-@current_app.route("/add_to_calendar/<int:event_id>")
+@current_app.route('/add_to_calendar/<int:event_id>')
 @login_required
 def add_to_calendar(event_id):
     event = Event.query.get_or_404(event_id)
 
-    # Format the .ics content
+    # Calculate the end time using the duration
+    event_end_date = event.date + timedelta(minutes=event.duration)
+
     ics_content = f"""BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//YourApp//NONSGML v1.0//EN
@@ -718,6 +778,7 @@ BEGIN:VEVENT
 UID:{event.id}@yourapp.com
 DTSTAMP:{event.date.strftime('%Y%m%dT%H%M%SZ')}
 DTSTART:{event.date.strftime('%Y%m%dT%H%M%SZ')}
+DTEND:{event_end_date.strftime('%Y%m%dT%H%M%SZ')}
 SUMMARY:{event.title}
 DESCRIPTION:{event.description} - Meeting Link: {event.event_meeting_link}
 LOCATION:Online
@@ -727,11 +788,9 @@ END:VEVENT
 END:VCALENDAR
 """
 
-    # Return the .ics file as a downloadable response
     response = Response(ics_content, mimetype="text/calendar")
     response.headers["Content-Disposition"] = f"attachment; filename={event.title}.ics"
     return response
-
 
 
 
@@ -828,4 +887,60 @@ def host_profile(host_username):
         max_votes=max_votes,
         average_rating=average_rating,  # Explicitly pass average rating
         total_voters=total_voters       # Explicitly pass total voters
+    )
+
+
+@current_app.route("/get_unchecked_count")
+@login_required
+def get_unchecked_count():
+    unchecked_confirmations = db.session.query(Attendee).join(Event).filter(
+        Event.user_id == current_user.id,
+        Attendee.attending == False
+    ).count()
+    return jsonify({"count": unchecked_confirmations})
+
+
+import pandas as pd
+from flask import send_file
+from io import BytesIO
+
+@current_app.route('/download_attendee_table')
+@login_required
+def download_attendee_table():
+    # Fetch attendee data
+    attendee_data = []
+    created_events = Event.query.filter_by(user_id=current_user.id).all()
+    for event in created_events:
+        for attendee in event.attendees:
+            attendee_data.append({
+                "Event": event.title,
+                "Date": event.date.strftime('%Y-%m-%d %H:%M:%S'),
+                "Attendee Name": attendee.user.username,
+                "Attendee Email": attendee.user.email,
+                "Attendee Age": attendee.user.age,
+                "Payment Sent": "Yes" if attendee.attending else "No",
+                "Payment Amount": event.price,
+                "Currency": event.currency,
+                "Payment Address": event.paymentaddress,
+                "Payment Comment": f"Event {event.id} + {attendee.user.email}",
+                "Meeting URL": event.event_meeting_link
+            })
+    
+    # Convert to DataFrame
+    df = pd.DataFrame(attendee_data)
+
+    # Write DataFrame to an Excel file in memory
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Attendee Table')
+
+    # Rewind the buffer
+    output.seek(0)
+
+    # Send the file to the user
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name='attendee_table.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )

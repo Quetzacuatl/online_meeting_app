@@ -7,27 +7,31 @@ body {
     padding-top: 70px; /* Adjust this value based on the actual height of your navbar */
 }
 
+.unstyled-link {
+    text-decoration: none; /* Removes underline */
+    color: black;
+}
+
+/* Optional: To override browser-specific styles */
+.unstyled-link:visited, .unstyled-link:hover, .unstyled-link:active, .unstyled-link:focus {
+    text-decoration: none; /* No underline for any state */
+    color: inherit; /* Inherits color from parent element */
+}
 
 h1 {
     margin-top: 20px;
 }
 
 /* Navbar Styling */
-
-/* Navbar transition for scrolling behavior */
 .navbar {
     transition: top 0.3s ease-in-out;
 }
 
-
-
-/* Navbar brand and toggle alignment */
 .navbar .container-fluid {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
-
 
 .navbar-dark .navbar-nav .nav-link {
     color: white;
@@ -35,7 +39,7 @@ h1 {
     margin: 0 auto;
 }
 
-.navbar-brand:hover {
+h1:hover {
     color: #5cb85c;
 }
 
@@ -46,73 +50,35 @@ h1 {
 /* FILTERS event_list.html container */
 .filters-container {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 15px;
     align-items: center;
-    justify-content: center;
-    gap: 15px; /* Add spacing between each section */
-    height: 100%; /* Ensure it matches the height of the navigation bar */
-    padding:2px;
+    justify-content: space-between;
+    max-width: 1200px; /* Match the width of the event cards container */
+    margin: 0 auto; /* Center the filters */
+    padding: 10px; /* Add some padding */
 }
 
 #filters-container input,
 #filters-container button,
 #filters-container a {
-    vertical-align: middle; /* Ensure inline elements are vertically aligned */
+    flex-grow: 1; /* Make each filter take up available space */
+    max-width: 250px; /* Optional: limit the width */
+    margin: 5px;
+    vertical-align: middle;
 }
 
-.filters-container .btn-primary {
-    max-width: 250px;
-    font-size: 16px;
-}
-
-.filter-date {
-    text-align: center;
-}
-
-.search-bar {
-    max-width: 500px;
-    width: 100%;
-    margin: 0 auto;
-}
-
-/* Search Bar Container */
-.search-container {
-    color: white;
-    padding: 15px 15px;
-    width: 90%;
-    text-align: center;
-    align-items: center;
-    margin: 0 auto;
-    max-width: 500px;
-}
-
+/* Ensure filters stack on smaller screens */
 @media (max-width: 768px) {
     .filters-container {
-        gap: 10px; /* Reduce spacing for smaller screens */
         flex-direction: column;
+        justify-content: center;
         align-items: stretch;
-    }
-
-    .filters-container .btn-primary {
-        font-size: 14px;
-        padding: 8px 12px;
-    }
-
-    .filter-date input {
-        font-size: 14px;
-    }
-
-    .search-bar input,
-    .search-bar button {
-        font-size: 14px;
+        gap: 10px;
     }
 }
 
-
-
-
-
-/* FORM STYLING */ 
+/* FORM STYLING */
 .form-label {
     font-weight: bold;
     color: #555;
@@ -122,7 +88,7 @@ h1 {
     border-radius: 5px;
     padding: 10px;
     font-size: 14px;
-    max-width: 500px; 
+    max-width: 500px;
     margin: 0 auto;
 }
 
@@ -131,10 +97,6 @@ h1 {
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
 }
 
-
-
-
-
 h2 {
     font-size: 1.5rem;
     font-weight: bold;
@@ -142,14 +104,12 @@ h2 {
     margin-top: 50px;
 }
 
-
 /* Container Styling */
 .container-main {
     max-width: 100%; /* Take the full width on smaller screens */
     width: 90%; /* Keep cards centered with padding */
     margin: 0 auto;
     padding: 5px 5px;
-
 }
 
 /* Row and Card Layout */
@@ -183,11 +143,9 @@ h2 {
     border: none;
     border-radius: 8px;
     overflow: hidden;
-
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-
     border-radius: 10px;
     background: white;
     padding: 20px;
@@ -195,7 +153,6 @@ h2 {
     margin-bottom: 20px;
     padding-top: 10px; /* Prevent margin collapse */
 }
-
 
 .card-title {
     font-size: 1.25rem;
@@ -208,10 +165,9 @@ h2 {
     font-weight: bold;
     text-align: center;
     margin-bottom: 20px;
-    margin-top:20px;
+    margin-top: 20px;
     padding-top: 20px;
 }
-
 
 .card h3 {
     color: #333;
@@ -230,7 +186,6 @@ h2 {
     margin-top: auto;
     padding: 15px;
     text-align: left;
-    
 }
 
 .card-calendar-links {
@@ -262,12 +217,7 @@ h2 {
     cursor: pointer; /* Show a pointer cursor to indicate interactivity */
 }
 
-
-
-
-
 /* BUTTON STYLING */
-
 .btn-primary {
     background-color: #007bff;
     border-color: #007bff;
@@ -281,16 +231,13 @@ h2 {
     border-color: #0056b3;
 }
 
-
 .btn-disabled {
     background-color: #6c757d;
     color: #fff;
     cursor: not-allowed;
 }
 
-
 /* Flash Message Styles */
-
 .flash-message {
     position: relative;
     margin-bottom: 15px;
@@ -325,11 +272,6 @@ h2 {
     color: #0c5460;
 }
 
-
-
-.text-center {
-    text-align: center;
-}
 
 
 /*TABLE STYLING */
@@ -435,4 +377,16 @@ h2 {
 .star-rating input:checked + label,
 .star-rating input:checked + label ~ label {
     color: #ffc107; /* Gold for selected stars */
+}
+
+
+.badge {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+    border-radius: 12px;
+    color: white;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545; /* Red for notifications */
 }

@@ -281,11 +281,17 @@ With best regards,
                 <label for="eventFilter" class="form-label">Filter by Event:</label>
                 <select id="eventFilter" class="form-select" style="max-width: 200px;">
                     <option value="">All Events</option>
-                    {% for event_title in unique_event_titles %}
-                    <option value="{{ event_title }}">{{ event_title }}</option>
+                    {% for event_title_with_date in unique_event_titles %}
+                    <option value="{{ event_title_with_date }}">{{ event_title_with_date.replace(' | ', ' (') + ')' }}</option>
                     {% endfor %}
                 </select>
+                
             </div>
+            <!-- download to excel button -->
+            <div class="mb-3">
+                <a href="{{ url_for('download_attendee_table') }}" class="btn btn-primary">Download Attendee Table</a>
+            </div>
+            
         </div>
 
         <div class="table-responsive spacing-controls">
