@@ -422,24 +422,6 @@
 
 
 
-
-    //LOCAL TIMEZONE FOR USERS
-    document.addEventListener("DOMContentLoaded", function () {
-            const eventDates = document.querySelectorAll(".event-date");
-            eventDates.forEach((element) => {
-                const dateISO = element.getAttribute("data-date");
-                if (dateISO) {
-                    const date = new Date(dateISO);
-                    // Convert to user's local time and display
-                    element.textContent = date.toLocaleString(undefined, {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                    });
-                }
-            });
-        });
-
-
     //DEFAULT EMAIL
     document.addEventListener("DOMContentLoaded", function () {
         // Add event listener to the "Reset to System Default" button

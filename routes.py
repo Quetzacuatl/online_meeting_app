@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from .models import User, Event, Attendee, Vote
 from .app import db, mail
 import pytz
-from pytz import timezone, all_timezones
+from pytz import timezone, all_timezones, UTC
 from datetime import datetime, timedelta
 from flask_mail import Message
 from urllib.parse import urlparse
@@ -12,6 +12,7 @@ from sqlalchemy import cast, String, func
 from sqlalchemy import asc, desc
 from dotenv import load_dotenv
 import os
+from urllib.parse import urlencode
 
 
 def is_valid_url(url):
@@ -42,6 +43,61 @@ def home():
 
     # Fetch all events as a base query
     events_query = Event.query
+
+    # Adjust event dates to the user's timezone
+    events = events_query.order_by(Event.date.asc()).all()
+    user_timezone = pytz.timezone(current_user.preferred_timezone if current_user.is_authenticated else "UTC")
+
+    # In your `home` route:
+    for event in events:
+        # Ensure user_timezone is a pytz timezone object
+        if isinstance(user_timezone, str):
+            user_tz = timezone(user_timezone)  # User's local timezone
+        else:
+            user_tz = user_timezone
+
+        # Convert event.date to the user's timezone
+        event_tz = timezone(event.tz_name)  # Assuming event.tz_name is "Europe/Brussels"
+        event_localized = event.date.astimezone(event_tz)  # Ensure event.date is timezone-aware
+        event_user_tz_date = event_localized.astimezone(user_tz)  # Convert to user's timezone
+
+        # Store the converted date in the event for use in the frontend
+        event.local_date = event_user_tz_date  # User-localized time
+        # Calculate event end time in user's timezone
+        event_user_tz_end_date = event_user_tz_date + timedelta(minutes=event.duration)
+
+        # Convert to UTC for calendar URLs
+        event_date_utc = event_user_tz_date.astimezone(pytz.UTC)
+        event_end_date_utc = event_user_tz_end_date.astimezone(pytz.UTC)
+        # print(event_user_tz_date.isoformat())
+
+        # Generate Outlook Calendar URL using user's local timezone
+        # Generate Outlook Calendar URL
+        event.outlook_calendar_url = (
+            "https://outlook.live.com/calendar/0/deeplink/compose?" +
+            urlencode({
+                "path": "/calendar/action/compose",
+                "subject": event.title,
+                "startdt": event_user_tz_date.isoformat(),  # Localized ISO 8601
+                "enddt": event_user_tz_end_date.isoformat(),  # Localized ISO 8601
+                "body": f"Meeting Link: {event.event_meeting_link} - {event.description}",
+            })
+        )
+
+        # Generate Google Calendar URL
+        event.google_calendar_url = (
+            "https://calendar.google.com/calendar/r/eventedit?" +
+            urlencode({
+                "text": event.title,
+                "dates": f"{event_date_utc.strftime('%Y%m%dT%H%M%SZ')}/{event_end_date_utc.strftime('%Y%m%dT%H%M%SZ')}",
+                "details": f"Meeting Link: {event.event_meeting_link} - {event.description}",
+                "location": "Online"
+            })
+        )
+        
+        print("Outlook URL:", event.outlook_calendar_url)
+
+
 
     # Mark events as closed if needed
     for event in events_query.all():
@@ -129,7 +185,8 @@ def home():
         timedelta=timedelta,
         pytz=pytz,
         total_users=total_users,
-        unchecked_confirmations=unchecked_confirmations
+        unchecked_confirmations=unchecked_confirmations,
+        user_timezone=user_timezone.zone,
     )
 
 
@@ -141,6 +198,7 @@ def register():
         email = request.form["email"]
         password = generate_password_hash(request.form["password"])
         birthdate_str = request.form["birthdate"]
+        preferred_timezone = request.form["user_timezone"]
 
         # Validate that the username is within the allowed length
         if len(username) > 20:
@@ -160,7 +218,7 @@ def register():
             return render_template("register.html")
 
         # Create and save new user
-        user = User(username=username, email=email, password=password, birthdate=birthdate) #, iban = "", payment_email_title = "", payment_email_body= "", confirmation_email_title= "", confirmation_email_body= ""
+        user = User(username=username, email=email, password=password, birthdate=birthdate, preferred_timezone=preferred_timezone) #, iban = "", payment_email_title = "", payment_email_body= "", confirmation_email_title= "", confirmation_email_body= ""
         db.session.add(user)
         db.session.commit()
 
@@ -244,7 +302,6 @@ def reset_token(token):
 def dashboard():
     view = request.args.get("view", "dashboard")
     date_filter = request.args.get("dateFilter", "")  # Ensure date_filter is always initialized
-    search_query = request.args.get("search", "").lower()
 
     # Loop through each event to close if date and time are in the past
     # Fetch all events
@@ -642,15 +699,17 @@ def send_confirmation_email():
         return jsonify({"success": False, "message": "Invalid event date format"}), 400
 
 
-    # Calculate the end time using the duration
-    event_end_date = event.date + timedelta(minutes=event.duration)
     from urllib.parse import urlencode
+    # Format the dates to include timezone offset (RFC 5545 format)
+    event_date_str = event_date.strftime('%Y%m%dT%H%M%S%z')  # e.g., 20231203T150000+0100
+    event_end_date_str = event_end_date.strftime('%Y%m%dT%H%M%S%z')  # e.g., 20231203T170000+0100
+
     # Generate Google Calendar link
     google_calendar_url = (
         "https://calendar.google.com/calendar/r/eventedit?" +
         urlencode({
             "text": event.title,
-            "dates": f"{event.date.strftime('%Y%m%dT%H%M%S')}/{event_end_date.strftime('%Y%m%dT%H%M%S')}",
+            "dates": f"{event_date_str}/{event_end_date_str}",  # Include timezone-aware dates
             "details": f"Meeting Link: {event.event_meeting_link} - {event.description}",
             "location": "Online"
         })
@@ -662,8 +721,8 @@ def send_confirmation_email():
         urlencode({
             "path": "/calendar/action/compose",
             "subject": event.title,
-            "startdt": event.date.strftime('%Y-%m-%dT%H:%M:%S'),
-            "enddt": event_end_date.strftime('%Y-%m-%dT%H:%M:%S'),
+            "startdt": event_date.isoformat(),  # ISO 8601 format
+            "enddt": event_end_date.isoformat(),  # ISO 8601 format
             "body": f"Meeting Link: {event.event_meeting_link} - {event.description}",
         })
     )

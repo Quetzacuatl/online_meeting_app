@@ -23,6 +23,12 @@
                 <label for="birthdate" class="form-label">Birthdate</label>
                 <input type="date" class="form-control" id="birthdate" name="birthdate" required>
             </div>
+            <label for="user_timezone">Timezone</label>
+            <select id="user_timezone" name="user_timezone" class="form-control" required>
+                {% for tz in pytz.all_timezones %}
+                    <option value="{{ tz }}">{{ tz }}</option>
+                {% endfor %}
+            </select>
             <div class="d-grid">
                 <button type="submit" class="btn btn-success">Register</button>
             </div>
