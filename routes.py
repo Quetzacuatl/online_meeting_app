@@ -14,6 +14,19 @@ from dotenv import load_dotenv
 import os
 from urllib.parse import urlencode
 
+@current_app.context_processor
+def inject_unchecked_confirmations():
+    unchecked_confirmations = 0
+    if current_user.is_authenticated:
+        try:
+            unchecked_confirmations = db.session.query(Attendee).join(Event).filter(
+                Event.user_id == current_user.id,
+                Attendee.attending == False  # Adjust this condition based on your schema
+            ).count()
+        except Exception as e:
+            print(f"Error calculating unchecked confirmations: {e}")  # Log the error for debugging
+
+    return {'unchecked_confirmations': unchecked_confirmations}
 
 def is_valid_url(url):
     parsed = urlparse(url)
@@ -30,6 +43,7 @@ def send_reset_email(user):
 If you did not make this request, simply ignore this email and no changes will be made.
 """
     mail.send(msg)
+
 
 
 @current_app.route("/")
@@ -69,7 +83,6 @@ def home():
         # Convert to UTC for calendar URLs
         event_date_utc = event_user_tz_date.astimezone(pytz.UTC)
         event_end_date_utc = event_user_tz_end_date.astimezone(pytz.UTC)
-        # print(event_user_tz_date.isoformat())
 
         # Generate Outlook Calendar URL using user's local timezone
         # Generate Outlook Calendar URL
@@ -94,8 +107,7 @@ def home():
                 "location": "Online"
             })
         )
-        
-        print("Outlook URL:", event.outlook_calendar_url)
+
 
 
 
@@ -163,20 +175,6 @@ def home():
             event.is_attending = False
 
 
-    # Calculate unchecked confirmations
-    if current_user.is_authenticated:
-        try:
-            unchecked_confirmations = db.session.query(Attendee).join(Event).filter(
-                Event.user_id == current_user.id,
-                Attendee.attending == False  # Adjust this condition based on your schema
-            ).count()
-        except Exception as e:
-            unchecked_confirmations = 0  # Default to 0 if an error occurs
-            print(f"Error calculating unchecked confirmations: {e}")  # Log the error for debugging
-    else:
-        unchecked_confirmations = 0
-
-
     return render_template(
         "event_list.html",
         events=events,
@@ -185,7 +183,6 @@ def home():
         timedelta=timedelta,
         pytz=pytz,
         total_users=total_users,
-        unchecked_confirmations=unchecked_confirmations,
         user_timezone=user_timezone.zone,
     )
 
@@ -340,19 +337,6 @@ def dashboard():
 
     attending_events = Event.query.join(Attendee).filter(Attendee.user_id == current_user.id).all()
 
-    # Calculate unchecked confirmations
-    if current_user.is_authenticated:
-        try:
-            unchecked_confirmations = db.session.query(Attendee).join(Event).filter(
-                Event.user_id == current_user.id,
-                Attendee.attending == False  # Adjust this condition based on your schema
-            ).count()
-        except Exception as e:
-            unchecked_confirmations = 0  # Default to 0 if an error occurs
-            print(f"Error calculating unchecked confirmations: {e}")  # Log the error for debugging
-    else:
-        unchecked_confirmations = 0
-
 
     # Pass the list of timezones to the template
     timezones = all_timezones 
@@ -381,7 +365,7 @@ def dashboard():
                 "payment_amount": event.price,
                 "payment_currency": event.currency,
                 "payment_adress" : event.paymentaddress,
-                "payment_comment": f"Event {event.id} + {attendee.user.email}",
+                "payment_comment": f"Event {event.id} {attendee.user.username}",
                 "attendee_id": attendee.id,
                 "host_email": current_user.email,
                 "confirmation_email_title": current_user.confirmation_email_title,
@@ -400,7 +384,6 @@ def dashboard():
         preferred_timezone=preferred_timezone,
         date_filter=date_filter,  # Pass the date filter to the template
         unique_event_titles=unique_event_titles,
-        unchecked_confirmations=unchecked_confirmations
     )
 
 
@@ -644,7 +627,7 @@ def attend_event(event_id):
         "{host_email}": host_email,
         "{event_user}": current_user.username,
         "{host_name}": event.organizer.username, 
-        "{comment}": f"Event {event.id} {current_user.email}",  # Add the Comment placeholder
+        "{comment}": f"Event {event.id} {current_user.username}",  # Add the Comment placeholder
     }
 
     # Replace placeholders in the email content
@@ -731,7 +714,7 @@ def send_confirmation_email():
     placeholders = {
         "{event_user}": attendee_name,
         "{event_title}": event_title,
-        "{event_date}": event_date.strftime('%Y-%m-%d %H:%M:%S'),
+        "{event_date}": event.date.strftime("%Y-%m-%d %H:%M %Z"),
         "{event_meeting_url}": event_meeting_url,
         "{host_name}": current_user.username,
         "{host_email}": current_user.email,
@@ -877,7 +860,10 @@ def rate_host(host_id):
 
     # Get the rating value from the form
     rating = request.form.get('rating')
-    print('rating: '+rating)
+    if not rating:
+        flash("No rating selected. Please select a value between 1 and 5.", "danger")
+        return redirect(request.referrer)
+
     try:
         rating = int(rating)
         if rating < 1 or rating > 5:
@@ -915,8 +901,7 @@ def host_profile(host_username):
     average_rating = host.average_rating
     total_voters = host.total_voters
     total_rating = host.total_rating
-    print(total_rating)
-    print(average_rating)
+
 
     # Check if the current user is a confirmed attendee
     is_confirmed_attendee = False
@@ -981,7 +966,7 @@ def download_attendee_table():
                 "Payment Amount": event.price,
                 "Currency": event.currency,
                 "Payment Address": event.paymentaddress,
-                "Payment Comment": f"Event {event.id} + {attendee.user.email}",
+                "Payment Comment": f"Event {event.id} {attendee.user.username}",
                 "Meeting URL": event.event_meeting_link
             })
     
@@ -1003,3 +988,22 @@ def download_attendee_table():
         download_name='attendee_table.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
+
+
+@current_app.errorhandler(500)
+def internal_server_error(e):
+    # Log the error
+    current_app.logger.error(f"Server Error: {e}")
+    # Optionally, send a notification to admins
+    # return a user-friendly response
+    return render_template('500.html'), 500
+
+
+
+@current_app.errorhandler(404)
+def internal_server_error(e):
+    # Log the error
+    current_app.logger.error(f"Server Error: {e}")
+    # Optionally, send a notification to admins
+    # return a user-friendly response
+    return render_template('500.html'), 500

@@ -18,20 +18,28 @@ migrate = Migrate()
 mail = Mail()
 login_manager = LoginManager()
 
-
 def create_app():
     app = Flask(__name__)
-    app.config['FLASK_ENV'] = os.getenv('FLASK_ENV', 'development')
+
     # Load configuration from environment variables
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    app.config['FLASK_ENV'] = os.getenv('FLASK_ENV', 'development')
+
+    # Database Configuration
+    if app.config['FLASK_ENV'] == 'dev':
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DEV_DATABASE_URL', 'sqlite:///dev.db')
+    else:
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # Mail Configuration
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
     app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
     app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@demo.com')
 
     # Initialize extensions with the app
     db.init_app(app)
@@ -49,12 +57,10 @@ def create_app():
     # Register routes or blueprints
     with app.app_context():
         from . import routes  # Import routes after app is fully initialized
-        if app.config['FLASK_ENV'] == 'development':
-            db.create_all()
-            print(db.engine)  # Should print the database engine details
+        if app.config['FLASK_ENV'] == 'dev':
+            db.create_all()  # For development purposes only
 
     return app
-
 
 if __name__ == "__main__":
     app = create_app()

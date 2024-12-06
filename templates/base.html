@@ -578,53 +578,71 @@ Add this event to your calendar using the links below:
 
         // STAR RATING
         document.addEventListener("DOMContentLoaded", function () {
-            // Get all the stars (labels) and reverse them for proper order
-            const starLabels = Array.from(document.querySelectorAll(".star-rating label")).reverse();
+    // Get all the stars (labels) and reverse them for proper order
+    const starLabels = Array.from(document.querySelectorAll(".star-rating label")).reverse();
+    const starInputs = Array.from(document.querySelectorAll(".star-rating input"));
 
-            // Handle hover effect
-            starLabels.forEach((label, index) => {
-                label.addEventListener("mouseenter", () => {
-                    // Highlight all stars up to the hovered star
-                    for (let i = 0; i <= index; i++) {
-                        starLabels[i].style.color = "#f4c150"; // Yellow
-                    }
-                    // Reset stars beyond the hovered star
-                    for (let i = index + 1; i < starLabels.length; i++) {
-                        starLabels[i].style.color = "#ccc"; // Default color
-                    }
-                });
+    console.log("Star rating script loaded");
 
-                label.addEventListener("mouseleave", () => {
-                    // Reset all stars to their default color
-                    starLabels.forEach(label => (label.style.color = "#ccc"));
-
-                    // Apply the checked stars highlight
-                    const checkedInput = document.querySelector(".star-rating input:checked");
-                    if (checkedInput) {
-                        const checkedIndex = starLabels.findIndex(
-                            label => label.htmlFor === checkedInput.id
-                        );
-                        for (let i = 0; i <= checkedIndex; i++) {
-                            starLabels[i].style.color = "#f4c150"; // Yellow
-                        }
-                    }
-                });
-
-                // Handle click to save rating
-                label.addEventListener("click", () => {
-                    const input = document.getElementById(label.htmlFor); // Corresponding input
-                    input.checked = true; // Mark input as checked
-
-                    // Apply the highlight for the selected stars
-                    for (let i = 0; i <= index; i++) {
-                        starLabels[i].style.color = "#f4c150"; // Yellow
-                    }
-                    for (let i = index + 1; i < starLabels.length; i++) {
-                        starLabels[i].style.color = "#ccc"; // Default color
-                    }
-                });
-            });
+    // Handle hover effect
+    starLabels.forEach((label, index) => {
+        label.addEventListener("mouseenter", () => {
+            // Highlight all stars up to the hovered star
+            for (let i = 0; i <= index; i++) {
+                starLabels[i].style.color = "#f4c150"; // Yellow
+            }
+            // Reset stars beyond the hovered star
+            for (let i = index + 1; i < starLabels.length; i++) {
+                starLabels[i].style.color = "#ccc"; // Default color
+            }
         });
+
+        label.addEventListener("mouseleave", () => {
+            // Reset all stars to their default color
+            starLabels.forEach(label => (label.style.color = "#ccc"));
+
+            // Apply the highlight based on the checked input
+            const checkedInput = starInputs.find(input => input.checked);
+            if (checkedInput) {
+                const checkedIndex = starLabels.findIndex(
+                    label => label.htmlFor === checkedInput.id
+                );
+                for (let i = 0; i <= checkedIndex; i++) {
+                    starLabels[i].style.color = "#f4c150"; // Yellow
+                }
+            }
+        });
+
+        // Handle click to save rating
+        label.addEventListener("click", () => {
+    const input = document.getElementById(label.htmlFor); // Corresponding input
+    if (input) {
+        input.checked = true; // Mark input as checked
+        console.log(`Selected rating: ${input.value}`); // Debugging log
+    } else {
+        console.error(`No input found for label: ${label.htmlFor}`);
+    }
+
+    // Apply the highlight for the selected stars
+    for (let i = 0; i <= index; i++) {
+        starLabels[i].style.color = "#f4c150"; // Yellow
+    }
+    for (let i = index + 1; i < starLabels.length; i++) {
+        starLabels[i].style.color = "#ccc"; // Default color
+    }
+});
+
+    });
+
+    // Initialize the stars based on the checked input on page load
+    const checkedInput = starInputs.find(input => input.checked);
+    if (checkedInput) {
+        const checkedIndex = starLabels.findIndex(label => label.htmlFor === checkedInput.id);
+        for (let i = 0; i <= checkedIndex; i++) {
+            starLabels[i].style.color = "#f4c150"; // Yellow
+        }
+    }
+});
 
 
 

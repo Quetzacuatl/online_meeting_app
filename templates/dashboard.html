@@ -28,17 +28,23 @@
 
     <!-- How it works section -->
     {% if view == 'how_it_works' %}
-    <p><h2 class="text-center">How it works</h2></p>
+    <p><h2 class="uncentered">How it works</h2></p>
     <br>
-    <div>
+    <div class="uncentered">
         <ul>
             <em><strong> Only share an online meeting URL (eg. google meet) AFTER you have been paid</em> </strong>
+            <li>Create online meeting card -> users click attend -> this sends an automatic email with your payment instructions -> you confirm payment in 'Attendee details list'  -> This sends confirmation email with meeting url</li>
+
             <li>This website manages the automatic mailing (1.payment instruction email and 2.confirmation email sharing meeting URL) and attendees list</li>
-            <li>Required : Update profile - add your payment address on which you want to receive funds</li>
+            <li>Update profile - check and select your timezone ! </li>
+            <li>Update profile - add your payment address on which you want to receive funds</li>
+            <li>Update profile - write your 'payment email' . Why ? When users click on "attend" , this will send a welcome mail with request to pay you (you receive a copy of this mail)</li>
+            <li>Update profile - write your 'confirmation email' . Why ? After you check the box 'confirm payment/send confirmation' this will send an email containing the meeting URL</li>
             <li>Required : manually create online meeting url (eg google meet) - add this in the field 'meeting url' when 'create event'</li>
-            <li>Required : manually check your bank / crypto account for payment and check 'confirm payment in table below'</li>
+            <li>Required : manually share the meeting card on your social media. If users click on 'attend' you will receive an email and see a notification on our website</li>
+            <li>Required : manually check your account for a payment. When payment received, go to dashboard > attendee details > check the box 'confirm payment/send confirmation' </li>
             <li>Required : manually ensure that users can join the meeting by clicking on the meeting link ! (sometimes required to 'invite users')</li>
-            <li>Create event -> users click attend -> this sends an automatic email with your payment instructions (set up in 'Profile' and 'create event') -> you confirm payment in 'Attendee details list'  -> This sends confirmation email with meeting url</li>
+            
         </ul>
         <br>
         <ul>
