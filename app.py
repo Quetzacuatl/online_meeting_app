@@ -29,9 +29,12 @@ def create_app():
     if app.config['FLASK_ENV'] == 'dev':
         app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DEV_DATABASE_URL', 'sqlite:///dev.db')
     else:
-        app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        # Database Configuration
+        database_url = os.getenv('DATABASE_URL')
+        if database_url and database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url or os.getenv('DEV_DATABASE_URL', 'sqlite:///dev.db')
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Mail Configuration
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
