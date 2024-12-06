@@ -56,7 +56,7 @@ def create_app():
 
     # Register routes or blueprints
     with app.app_context():
-        from . import routes  # Import routes after app is fully initialized
+        from .static import routes  # Import routes after app is fully initialized
         if app.config['FLASK_ENV'] == 'dev':
             db.create_all()  # For development purposes only
 
@@ -64,4 +64,5 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="0.0.0.0", port=os.getenv("PORT", 5000))
+    port = int(os.getenv("PORT", 5000))  # Heroku provides the PORT, locally defaults to 5000
+    app.run(debug=True, host="0.0.0.0", port=port)
