@@ -23,17 +23,17 @@ def create_app():
 
     # Load configuration from environment variables
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key')
-    app.config['FLASK_ENV'] = os.getenv('FLASK_ENV', 'development')
+    app.config['FLASK_ENV'] = os.getenv('FLASK_ENV', 'dev')
 
     # Database Configuration
     if app.config['FLASK_ENV'] == 'dev':
-        app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DEV_DATABASE_URL', 'sqlite:///dev.db')
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DEV_DATABASE_URL')
     else:
         # Database Configuration
         database_url = os.getenv('DATABASE_URL')
-        if database_url and database_url.startswith("postgres://"):
-            database_url = database_url.replace("postgres://", "postgresql://", 1)
-        app.config['SQLALCHEMY_DATABASE_URI'] = database_url or os.getenv('DEV_DATABASE_URL', 'sqlite:///dev.db')
+        # if database_url and database_url.startswith("postgres://"):
+        #     database_url = database_url.replace("postgres://", "postgresql://", 1)
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url or os.getenv('PROD_DATABASE_URL')
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Mail Configuration
@@ -59,9 +59,8 @@ def create_app():
 
     # Register routes or blueprints
     with app.app_context():
-        from .static import routes  # Import routes after app is fully initialized
-        if app.config['FLASK_ENV'] == 'dev':
-            db.create_all()  # For development purposes only
+        from . import routes  # Import routes after app is fully initialized
+        db.create_all()  # For development purposes only
 
     return app
 
