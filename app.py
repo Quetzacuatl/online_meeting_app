@@ -58,7 +58,7 @@ def load_user(user_id):
 
 # Register routes or blueprints
 with app.app_context():
-    from online_meeting_app import routes  # Import routes after app is fully initialized
+    from .routes import * # Import routes after app is fully initialized
     if app.config['FLASK_ENV'] == 'dev':
         db.create_all()  # For development purposes only
 
