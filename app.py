@@ -58,9 +58,12 @@ def load_user(user_id):
 
 # Register routes or blueprints
 with app.app_context():
-    from .routes import * # Import routes after app is fully initialized
+    
     if app.config['FLASK_ENV'] == 'dev':
+        from .routes import * # Import routes after app is fully initialized
         db.create_all()  # For development purposes only
+    else:
+        from routes import * # Import routes after app is fully initialized
 
 
 
