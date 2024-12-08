@@ -4,12 +4,12 @@ from datetime import date
 from sqlalchemy import Boolean, String, Text, Integer, DateTime, Date, ForeignKey
 from sqlalchemy.sql import expression
 from sqlalchemy.orm import relationship
-from app import db
 from pytz import timezone
 from sqlalchemy.types import TIMESTAMP
 from itsdangerous import URLSafeTimedSerializer
 from flask import current_app
 
+db = SQLAlchemy()
 
 # User model
 class User(db.Model, UserMixin):

@@ -4,17 +4,18 @@ from flask_migrate import Migrate
 from flask_mail import Mail
 from flask_login import LoginManager
 from dotenv import load_dotenv
+from app.models import db, User, Event, Attendee, Vote
 import os
+
+# Define the base directory of the project
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Load environment variables
 load_dotenv()
 app = Flask(__name__)
 
-# Define the base directory of the project
-basedir = os.path.abspath(os.path.dirname(__file__))
-
 # Initialize extensions
-db = SQLAlchemy() 
+# db = SQLAlchemy() 
 migrate = Migrate()
 mail = Mail()
 login_manager = LoginManager()
