@@ -1,8 +1,73 @@
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_mail import Mail
+from flask_login import LoginManager
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+app = Flask(__name__)
+
+# Define the base directory of the project
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+# Initialize extensions
+db = SQLAlchemy()
+migrate = Migrate()
+mail = Mail()
+login_manager = LoginManager()
+
+# Load configuration from environment variables
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key')
+app.config['FLASK_ENV'] = os.getenv('FLASK_ENV', 'dev')
+
+# Database Configuration
+if app.config['FLASK_ENV'] == 'dev':
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DEV_DATABASE_URL')
+else:
+    # Database Configuration
+    database_url = os.getenv('DATABASE_URL')
+        # Fix for Heroku database URL
+    if database_url and database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url or os.getenv('PROD_DATABASE_URL')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Mail Configuration
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@demo.com')
+
+# Initialize extensions with the app
+db.init_app(app)
+migrate.init_app(app, db)
+mail.init_app(app)
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Define user loader for Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    from app.models import User
+    return User.query.get(int(user_id))
+
+# Register routes or blueprints
+with app.app_context():
+    
+    if app.config['FLASK_ENV'] == 'dev':
+        db.create_all()  # For development purposes only
+
+
+
 from flask import current_app, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
-from .models import User, Event, Attendee, Vote
-from .app import db, mail
+from app.models import User, Event, Attendee, Vote
 import pytz
 from pytz import timezone, all_timezones, UTC
 from datetime import datetime, timedelta
@@ -14,7 +79,7 @@ from dotenv import load_dotenv
 import os
 from urllib.parse import urlencode
 
-@current_app.context_processor
+@app.context_processor
 def inject_unchecked_confirmations():
     unchecked_confirmations = 0
     if current_user.is_authenticated:
@@ -46,7 +111,7 @@ If you did not make this request, simply ignore this email and no changes will b
 
 
 
-@current_app.route("/")
+@app.route("/")
 def home():
     # Retrieve search and date filter parameters
     query = request.args.get("search", "")
@@ -188,7 +253,7 @@ def home():
 
 
 
-@current_app.route("/register", methods=["GET", "POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         username = request.form["username"]
@@ -224,7 +289,7 @@ def register():
 
     return render_template("register.html")
 
-@current_app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         email = request.form["email"]
@@ -239,7 +304,7 @@ def login():
 
 
 
-@current_app.route("/logout")
+@app.route("/logout")
 @login_required
 def logout():
     logout_user()
@@ -247,7 +312,7 @@ def logout():
     return redirect(url_for("home"))
 
 
-@current_app.route('/reset_request', methods=['GET', 'POST'])
+@app.route('/reset_request', methods=['GET', 'POST'])
 def reset_request():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
@@ -266,7 +331,7 @@ def reset_request():
 
 
 
-@current_app.route('/reset_password/<token>', methods=['GET', 'POST'])
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_token(token):
     if current_user.is_authenticated:
         return redirect(url_for('home'))
@@ -294,7 +359,7 @@ def reset_token(token):
 
 
 
-@current_app.route("/dashboard")
+@app.route("/dashboard")
 @login_required
 def dashboard():
     view = request.args.get("view", "dashboard")
@@ -389,7 +454,7 @@ def dashboard():
 
 
 
-@current_app.route("/edit_profile", methods=["POST"])
+@app.route("/edit_profile", methods=["POST"])
 @login_required
 def edit_profile():
     username = request.form.get("username")
@@ -422,7 +487,7 @@ def edit_profile():
     return redirect(url_for("dashboard", view="create_event"))
 
 
-@current_app.route("/create_event", methods=["GET", "POST"])
+@app.route("/create_event", methods=["GET", "POST"])
 @login_required
 def create_event():
     if request.method == "POST":
@@ -531,7 +596,7 @@ def create_event():
     )
 
 
-@current_app.route("/edit_event/<int:event_id>", methods=["GET", "POST"])
+@app.route("/edit_event/<int:event_id>", methods=["GET", "POST"])
 @login_required
 def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
@@ -599,7 +664,7 @@ def edit_event(event_id):
 
 
 
-@current_app.route("/attend_event/<int:event_id>", methods=["GET"])
+@app.route("/attend_event/<int:event_id>", methods=["GET"])
 @login_required
 def attend_event(event_id):
     event = Event.query.get_or_404(event_id)
@@ -654,7 +719,7 @@ def attend_event(event_id):
 
     return redirect(url_for("home"))
 
-@current_app.route('/send_confirmation_email', methods=['POST'])
+@app.route('/send_confirmation_email', methods=['POST'])
 @login_required
 def send_confirmation_email():
     data = request.get_json()
@@ -762,7 +827,7 @@ def send_confirmation_email():
 
 
 
-@current_app.route("/close_event/<int:event_id>", methods=["POST"])
+@app.route("/close_event/<int:event_id>", methods=["POST"])
 @login_required
 def close_event(event_id):
     event = Event.query.get_or_404(event_id)
@@ -778,7 +843,7 @@ def close_event(event_id):
     return jsonify({"success": True})
 
 
-@current_app.route("/delete_event/<int:event_id>", methods=["GET", "POST"])
+@app.route("/delete_event/<int:event_id>", methods=["GET", "POST"])
 @login_required
 def delete_event(event_id):
     event = Event.query.get_or_404(event_id)
@@ -805,7 +870,7 @@ def delete_event(event_id):
 from flask import Response
 from datetime import timedelta
 
-@current_app.route('/add_to_calendar/<int:event_id>')
+@app.route('/add_to_calendar/<int:event_id>')
 @login_required
 def add_to_calendar(event_id):
     event = Event.query.get_or_404(event_id)
@@ -836,7 +901,7 @@ END:VCALENDAR
 
 
 
-@current_app.route('/rate_host/<int:host_id>', methods=['POST'])
+@app.route('/rate_host/<int:host_id>', methods=['POST'])
 @login_required
 def rate_host(host_id):
     host = User.query.get_or_404(host_id)
@@ -888,7 +953,7 @@ def rate_host(host_id):
 
 
 
-@current_app.route('/host/<string:host_username>')
+@app.route('/host/<string:host_username>')
 def host_profile(host_username):
     host = User.query.filter_by(username=host_username).first_or_404()
 
@@ -934,7 +999,7 @@ def host_profile(host_username):
     )
 
 
-@current_app.route("/get_unchecked_count")
+@app.route("/get_unchecked_count")
 @login_required
 def get_unchecked_count():
     unchecked_confirmations = db.session.query(Attendee).join(Event).filter(
@@ -948,7 +1013,7 @@ import pandas as pd
 from flask import send_file
 from io import BytesIO
 
-@current_app.route('/download_attendee_table')
+@app.route('/download_attendee_table')
 @login_required
 def download_attendee_table():
     # Fetch attendee data
@@ -990,7 +1055,7 @@ def download_attendee_table():
     )
 
 
-@current_app.errorhandler(500)
+@app.errorhandler(500)
 def internal_server_error(e):
     # Log the error
     current_app.logger.error(f"Server Error: {e}")
@@ -1000,10 +1065,13 @@ def internal_server_error(e):
 
 
 
-@current_app.errorhandler(404)
+@app.errorhandler(404)
 def internal_server_error(e):
     # Log the error
     current_app.logger.error(f"Server Error: {e}")
     # Optionally, send a notification to admins
     # return a user-friendly response
     return render_template('500.html'), 500
+
+
+
