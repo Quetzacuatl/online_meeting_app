@@ -63,7 +63,7 @@ with app.app_context():
         from .routes import * # Import routes after app is fully initialized
         db.create_all()  # For development purposes only
     else:
-        from routes import * # Import routes after app is fully initialized
+        import routes # Import routes after app is fully initialized
 
 
 
