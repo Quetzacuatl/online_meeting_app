@@ -14,10 +14,11 @@ app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Initialize extensions
-db = SQLAlchemy()
+db = SQLAlchemy() 
 migrate = Migrate()
 mail = Mail()
 login_manager = LoginManager()
+
 
 # Load configuration from environment variables
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default_secret_key')
@@ -58,9 +59,7 @@ def load_user(user_id):
 
 # Register routes or blueprints
 with app.app_context():
-    
-    if app.config['FLASK_ENV'] == 'dev':
-        db.create_all()  # For development purposes only
+    db.create_all()  # or any operation requiring an app context
 
 
 

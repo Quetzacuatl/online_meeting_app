@@ -10,6 +10,9 @@ from sqlalchemy.types import TIMESTAMP
 from itsdangerous import URLSafeTimedSerializer
 from flask import current_app
 
+
+
+
 # User model
 class User(db.Model, UserMixin):
     id = db.Column(Integer, primary_key=True)
