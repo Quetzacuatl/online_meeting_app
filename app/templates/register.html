@@ -24,14 +24,16 @@
                 <input type="date" class="form-control" id="birthdate" name="birthdate" required>
             </div>
             <label for="user_timezone">Timezone</label>
-            <select id="user_timezone" name="user_timezone" class="form-control" required>
-                {% for tz in pytz.all_timezones %}
-                    <option value="{{ tz }}">{{ tz }}</option>
+            <select class="form-control" id="preferred_timezone" name="preferred_timezone">
+                {% for tz in timezones %}
+                    <option value="{{ tz }}" {% if tz == current_user.preferred_timezone %}selected{% endif %}>
+                        {{ tz }}
+                    </option>
                 {% endfor %}
             </select>
-            <div class="d-grid">
+            <p><div class="d-grid">
                 <button type="submit" class="btn btn-success">Register</button>
-            </div>
+            </div></p>
         </form>
     </div>
 </div>

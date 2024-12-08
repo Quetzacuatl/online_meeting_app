@@ -93,6 +93,11 @@ def inject_unchecked_confirmations():
 
     return {'unchecked_confirmations': unchecked_confirmations}
 
+@app.context_processor
+def inject_timezones():
+    from pytz import all_timezones
+    return {'timezones': all_timezones}
+
 def is_valid_url(url):
     parsed = urlparse(url)
     return bool(parsed.netloc) and bool(parsed.scheme)
@@ -260,7 +265,7 @@ def register():
         email = request.form["email"]
         password = generate_password_hash(request.form["password"])
         birthdate_str = request.form["birthdate"]
-        preferred_timezone = request.form["user_timezone"]
+        preferred_timezone = request.form["preferred_timezone"]
 
         # Validate that the username is within the allowed length
         if len(username) > 20:
