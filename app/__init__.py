@@ -155,10 +155,10 @@ def home():
         event_date_utc = event_user_tz_date.astimezone(event_tz)
         event_end_date_utc = event_user_tz_end_date.astimezone(event_tz)
 
-        naive_datetime = datetime.strptime(f"{date_str} {hour_str}", "%Y-%m-%d %H:%M")
+        naive_datetime = event.date
         # Save the timezone name along with the event
         event_date = naive_datetime  # Store the naive datetime
-        event_timezone = tz_name     # Store the user's preferred timezone
+        event_timezone = event.tz_name     # Store the user's preferred timezone
         event_end_date = event_date + timedelta(minutes=event.duration)
 
         # Generate Outlook Calendar URL using user's local timezone
