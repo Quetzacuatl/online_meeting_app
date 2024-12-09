@@ -530,9 +530,12 @@ def create_event():
         
         # Combine date and hour into a single datetime object
         try:
-            naive_datetime = datetime.strptime(f"{date_str} {hour_str}", "%Y-%m-%d %H:%M")
-            event_timezone = timezone(tz_name)
-            event_date = event_timezone.localize(naive_datetime)  # Apply the selected timezone
+            selected_timezone = pytz.timezone(tz_name)
+            # Combine date, hour, and the user's preferred timezone
+            naive_datetime_with_tz = f"{date_str} {hour_str} {selected_timezone}"
+            # Parse the datetime string with the timezone
+            event_date = datetime.strptime(naive_datetime_with_tz, "%Y-%m-%d %H:%M %Z")
+            event.date = event_date  # Update the event's date
         except ValueError:
             flash("Invalid date or time format.", "danger")
             return redirect(url_for("dashboard", view="create_event"))
@@ -632,9 +635,11 @@ def edit_event(event_id):
 
         # Combine date and hour into a single datetime object
         try:
-            naive_datetime = datetime.strptime(f"{date_str} {hour_str}", "%Y-%m-%d %H:%M")
             selected_timezone = pytz.timezone(tz_name)
-            event_date = selected_timezone.localize(naive_datetime)  # Apply the selected timezone
+            # Combine date, hour, and the user's preferred timezone
+            naive_datetime_with_tz = f"{date_str} {hour_str} {selected_timezone}"
+            # Parse the datetime string with the timezone
+            event_date = datetime.strptime(naive_datetime_with_tz, "%Y-%m-%d %H:%M %Z")
             event.date = event_date  # Update the event's date
         except ValueError:
             flash("Invalid date or time format.", "danger")
