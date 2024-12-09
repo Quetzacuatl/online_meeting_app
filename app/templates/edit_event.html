@@ -10,6 +10,10 @@
             <input type="text" class="form-control" id="title" name="title" value="{{ event.title }}" required>
         </div>
         <div class="mb-3">
+            <label for="event_meeting_link" class="form-label">Event Meeting Link</label>
+            <input type="url" class="form-control" id="event_meeting_link" name="event_meeting_link" value="{{ event.event_meeting_link }}" placeholder="Copy paste your online meeting URL (e.g., Google Meet, Skype)" required>
+        </div>
+        <div class="mb-3">
             <label for="description" class="form-label">Description</label>
             <textarea class="form-control" id="description" name="description" rows="3" required>{{ event.description }}</textarea>
         </div>
@@ -29,7 +33,10 @@
                 {% endfor %}
             </select>
         </div>
-        
+        <div class="mb-3">
+            <label for="duration" class="form-label">Duration (in minutes)</label>
+            <input type="number" class="form-control" id="duration" name="duration" placeholder="Enter duration (e.g., 60)" value="{{event.duration}}" required>
+        </div>
         <div class="mb-3">
             <label for="event_price" class="form-label">Event Price</label>
             <input type="number" class="form-control" id="event_price" name="event_price" value="{{ event.price }}" required>
@@ -39,6 +46,23 @@
             <input type="text" class="form-control" id="event_currency" name="event_currency" value="{{ event.currency }}" placeholder="Enter event currency" required>
         </div>
         <div class="mb-3">
+            <label for="event_language" class="form-label">Event Language</label>
+            <select class="form-control" id="event_language" name="event_language" required>
+                {% if event.event_language %}
+                    <option value="{{ event.event_language }}" selected>
+                        {{ event.event_language }}
+                    </option>
+                {% else %}
+                    <option value="" disabled selected>Select Language</option>
+                {% endif %}
+                <option value="English" {% if current_user.preferred_language == 'English' %}selected{% endif %}>English</option>
+                <option value="Français" {% if current_user.preferred_language == 'Français' %}selected{% endif %}>Français</option>
+                <option value="Deutsch" {% if current_user.preferred_language == 'Deutsch' %}selected{% endif %}>Deutsch</option>
+                <option value="Español" {% if current_user.preferred_language == 'Español' %}selected{% endif %}>Español</option>
+                <option value="Nederlands" {% if current_user.preferred_language == 'Nederlands' %}selected{% endif %}>Nederlands</option>
+                <!-- Add more languages as needed -->
+            </select>
+        <div class="mb-3">
             <label for="iban" class="form-label">Payment address</label>
             <textarea class="form-control" id="event_paymentaddress" name="event_paymentaddress" placeholder="enter payment address"
             rows="1" required>{{ event.paymentaddress }}</textarea>      
@@ -46,10 +70,6 @@
         <div class="mb-3">
             <label for="max_attendees" class="form-label">Max Attendees</label>
             <input type="number" class="form-control" id="max_attendees" name="max_attendees" value="{{ event.max_attendees }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="event_meeting_link" class="form-label">Event Meeting Link</label>
-            <input type="url" class="form-control" id="event_meeting_link" name="event_meeting_link" value="{{ event.event_meeting_link }}" required>
         </div>
         <div class="mb-3">
             <label for="payment_email_title" class="form-label">Payment Email Title</label>

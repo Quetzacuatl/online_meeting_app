@@ -530,12 +530,10 @@ def create_event():
         
         # Combine date and hour into a single datetime object
         try:
-            selected_timezone = pytz.timezone(tz_name)
-            # Combine date, hour, and the user's preferred timezone
-            naive_datetime_with_tz = f"{date_str} {hour_str} {selected_timezone}"
-            # Parse the datetime string with the timezone
-            event_date = datetime.strptime(naive_datetime_with_tz, "%Y-%m-%d %H:%M %Z")
-            event.date = event_date  # Update the event's date
+            naive_datetime = datetime.strptime(f"{date_str} {hour_str}", "%Y-%m-%d %H:%M")
+            event_timezone = timezone(tz_name)
+            event_date = event_timezone.localize(naive_datetime, is_dst=None)
+            event.date = event_date
         except ValueError:
             flash("Invalid date or time format.", "danger")
             return redirect(url_for("dashboard", view="create_event"))
@@ -624,7 +622,10 @@ def edit_event(event_id):
         hour_str = request.form.get("hour")
         tz_name = request.form.get("timezone")
         event.price = request.form.get("event_price")
+        event.event_meeting_link = request.form.get("event_meeting_link")
+        event.duration = request.form.get("duration")
         event.currency = request.form.get("event_currency")
+        event.event_language = request.form.get("event_language")
         event.paymentaddress = request.form.get("event_paymentaddress")
         event.max_attendees = request.form.get("max_attendees")
         event.event_meeting_link = request.form.get("event_meeting_link")
@@ -635,12 +636,10 @@ def edit_event(event_id):
 
         # Combine date and hour into a single datetime object
         try:
-            selected_timezone = pytz.timezone(tz_name)
-            # Combine date, hour, and the user's preferred timezone
-            naive_datetime_with_tz = f"{date_str} {hour_str} {selected_timezone}"
-            # Parse the datetime string with the timezone
-            event_date = datetime.strptime(naive_datetime_with_tz, "%Y-%m-%d %H:%M %Z")
-            event.date = event_date  # Update the event's date
+            naive_datetime = datetime.strptime(f"{date_str} {hour_str}", "%Y-%m-%d %H:%M")
+            event_timezone = timezone(tz_name)
+            event_date = event_timezone.localize(naive_datetime, is_dst=None)
+            event.date = event_date
         except ValueError:
             flash("Invalid date or time format.", "danger")
             return redirect(url_for("edit_event", event_id=event.id))
