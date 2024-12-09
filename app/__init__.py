@@ -96,7 +96,8 @@ def inject_unchecked_confirmations():
 @app.context_processor
 def inject_timezones():
     from pytz import all_timezones
-    return {'timezones': all_timezones}
+    from datetime import datetime, timedelta
+    return {'timezones': all_timezones, 'timedelta':timedelta}
 
 def is_valid_url(url):
     parsed = urlparse(url)
