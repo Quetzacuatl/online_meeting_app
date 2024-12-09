@@ -152,8 +152,14 @@ def home():
         event_user_tz_end_date = event_user_tz_date + timedelta(minutes=event.duration)
 
         # Convert to UTC for calendar URLs
-        event_date_utc = event_user_tz_date.astimezone(pytz.UTC)
-        event_end_date_utc = event_user_tz_end_date.astimezone(pytz.UTC)
+        event_date_utc = event_user_tz_date.astimezone(event_tz)
+        event_end_date_utc = event_user_tz_end_date.astimezone(event_tz)
+
+        naive_datetime = datetime.strptime(f"{date_str} {hour_str}", "%Y-%m-%d %H:%M")
+        # Save the timezone name along with the event
+        event_date = naive_datetime  # Store the naive datetime
+        event_timezone = tz_name     # Store the user's preferred timezone
+        event_end_date = event_date + timedelta(minutes=event.duration)
 
         # Generate Outlook Calendar URL using user's local timezone
         # Generate Outlook Calendar URL
@@ -162,8 +168,8 @@ def home():
             urlencode({
                 "path": "/calendar/action/compose",
                 "subject": event.title,
-                "startdt": event_user_tz_date.isoformat(),  # Localized ISO 8601
-                "enddt": event_user_tz_end_date.isoformat(),  # Localized ISO 8601
+                "startdt": event_date.isoformat(),  # Localized ISO 8601
+                "enddt": event_end_date.isoformat(),  # Localized ISO 8601
                 "body": f"Meeting Link: {event.event_meeting_link} - {event.description}",
             })
         )
