@@ -114,23 +114,7 @@
 
 
             <!-- Calendar Links Section -->
-            <!-- Calendar Links Section -->
-            {% if current_user.is_authenticated and attendee and attendee.attending %}
-                <div class="calendar-links-container">
-                    <!-- Google Calendar Link -->
-                    <a href="https://calendar.google.com/calendar/r/eventedit?text={{ event.title|urlencode }}&dates={{ event.local_date.strftime('%Y%m%dT%H%M%S%z') }}/{{ (event.local_date + timedelta(minutes=event.duration)).strftime('%Y%m%dT%H%M%S%z') }}&details={{ 'Meeting Link: ' + event.event_meeting_link + ' | ' + event.description|urlencode }}&location=Online"
-                    target="_blank">
-                        <i class="fa fa-calendar" aria-hidden="true"> Add to Google Calendar</i>
-                    </a>
-                    <br>
-                    <!-- Outlook Calendar Link -->
-            <!-- Outlook Calendar Link -->
-            <a href="{{ event.outlook_calendar_url }}" target="_blank" class="calendar-link">
-                <i class="fa fa-calendar attend-online-meeting-btn" aria-hidden="true"> Add to Outlook Calendar</i>
-            </a>
-            <!-- <p>Debug: {{ event.outlook_calendar_url }}</p> -->
-                </div>
-            {% endif %}
+
 
 
 
