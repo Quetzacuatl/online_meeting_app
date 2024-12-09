@@ -248,7 +248,7 @@ With best regards,
                                 </span>
                             </small>
                         </p>
-                        <p class="card-text"><small>Date: {{ event.date.strftime('%Y-%m-%d %H:%M %Z') }}</small></p>
+                        <p class="card-text"><small>Date: {{ event.date.strftime('%Y-%m-%d %H:%M') }} {{event.tz_name}} </small></p>
                         <p class="card-text"><small>Price: {{ event.price }} {{ event.currency }}</small></p>
                         <p class="card-text"><small>Attendees: {{ event.attendees|selectattr('attending', 'equalto', True)|list|length }} / {{ event.max_attendees }}</small></p>
                         <p class="card-text"><small>Meeting Link: <a href="{{ event.event_meeting_link }}" target="_blank">{{ event.event_meeting_link }}</a></small></p>

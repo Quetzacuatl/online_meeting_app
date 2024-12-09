@@ -57,7 +57,7 @@
             <div class="card-body">
                 <div class="card-title-container d-flex justify-content-between align-items-center">
                     <h5 class="card-title">{{ event.title }}
-                        <br><span>{{ event.date.strftime('%Y-%m-%d %H:%M %Z') }}</span>
+                        <br><span>{{ event.date.strftime('%Y-%m-%d %H:%M') }}</span>
                     </h5>
                     <i class="fa fa-share-alt share-icon"                
                     data-title="{{ event.title }}" 
@@ -87,7 +87,7 @@
                     </small>
                 </p>
                 <p class="card-text">
-                    <small>Date: <span >{{ event.date.strftime('%Y-%m-%d %H:%M %Z') }}</span></small>
+                    <small>Date: <span >{{ event.date.strftime('%Y-%m-%d %H:%M') }} {{event.tz_name}}</span></small>
                 </p>
                 <p class="card-text"><small>Duration (minutes): {{ event.duration }}</small></p>
                 <p class="card-text"><small>Price: {{ event.price }} {{ event.currency }}</small></p>

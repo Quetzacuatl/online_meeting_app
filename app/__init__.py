@@ -144,7 +144,7 @@ def home():
         # Convert event.date to the user's timezone
         event_tz = timezone(event.tz_name)  # Assuming event.tz_name is "Europe/Brussels"
         event_localized = event.date.astimezone(event_tz)  # Ensure event.date is timezone-aware
-        event_user_tz_date = event_localized.astimezone(user_tz)  # Convert to user's timezone
+        event_user_tz_date = event_localized.astimezone(event_tz)  # Convert to user's timezone
 
         # Store the converted date in the event for use in the frontend
         event.local_date = event_user_tz_date  # User-localized time
@@ -530,9 +530,11 @@ def create_event():
         
         # Combine date and hour into a single datetime object
         try:
+            # Parse the date and time as provided by the user
             naive_datetime = datetime.strptime(f"{date_str} {hour_str}", "%Y-%m-%d %H:%M")
-            event_timezone = timezone(tz_name)
-            event_date = event_timezone.localize(naive_datetime, is_dst=None)
+            # Save the timezone name along with the event
+            event_date = naive_datetime  # Store the naive datetime
+            event_timezone = tz_name     # Store the user's preferred timezone
             event.date = event_date
         except ValueError:
             flash("Invalid date or time format.", "danger")
@@ -636,9 +638,11 @@ def edit_event(event_id):
 
         # Combine date and hour into a single datetime object
         try:
+            # Parse the date and time as provided by the user
             naive_datetime = datetime.strptime(f"{date_str} {hour_str}", "%Y-%m-%d %H:%M")
-            event_timezone = timezone(tz_name)
-            event_date = event_timezone.localize(naive_datetime, is_dst=None)
+            # Save the timezone name along with the event
+            event_date = naive_datetime  # Store the naive datetime
+            event_timezone = tz_name     # Store the user's preferred timezone
             event.date = event_date
         except ValueError:
             flash("Invalid date or time format.", "danger")
@@ -694,7 +698,7 @@ def attend_event(event_id):
     # Replace placeholders in title and body
     placeholders = {
         "{event_title}": event.title,
-        "{event_date}": event.date.strftime("%Y-%m-%d %H:%M %Z"),
+        "{event_date}": event.date.strftime("%Y-%m-%d %H:%M") + ' '+event.tz_name,
         "{event_price}": event.price,
         "{event_currency}": event.currency,  # Add currency here
         "{event_meeting_url}" : event.event_meeting_link,
@@ -789,7 +793,7 @@ def send_confirmation_email():
     placeholders = {
         "{event_user}": attendee_name,
         "{event_title}": event_title,
-        "{event_date}": event.date.strftime("%Y-%m-%d %H:%M %Z"),
+        "{event_date}": event.date.strftime("%Y-%m-%d %H:%M") + ' '+event.tz_name,
         "{event_meeting_url}": event_meeting_url,
         "{host_name}": current_user.username,
         "{host_email}": current_user.email,
