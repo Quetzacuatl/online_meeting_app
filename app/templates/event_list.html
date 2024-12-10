@@ -6,7 +6,7 @@
 
 
 <div class="container my-3">
-    <h5>Total platform users: {{ total_users }}</h5>
+    Total platform users: {{ total_users }}
 </div>
 
 <a href="{{ url_for('home') }}" class="unstyled-link">
@@ -33,20 +33,6 @@
     </div>
 </div>
 
-
-<!-- host statistics : users can rate -->
-{% if current_user.is_authenticated and attendee and attendee.attending %}
-<div class="rating">
-    <label for="rate-event">Rate this event:</label>
-    <div id="rate-event" class="stars">
-        {% for star in range(1, 6) %}
-            <i class="fa fa-star" 
-               data-rating="{{ star }}" 
-               onclick="rateEvent('{{ event.id }}', {{ star }})"></i>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
 
 
 <div class="row row-cols-1 row-cols-md-3 g-4">
