@@ -1,6 +1,6 @@
 /* General Body Styling */
 body {
-    font-family: Arial, sans-serif;
+    font-family: Calibri, sans-serif;
     background-color: #f4f4f9; /* #f8f9fa; */
     margin: 0;
     padding: 0;
@@ -26,7 +26,7 @@ h1 { font-family: Calibri; font-size: 24px; font-style: normal; font-variant: no
 }
 
 h1 {
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 /* Navbar Styling */
@@ -165,6 +165,8 @@ h2 {
     font-size: 1.25rem;
     font-weight: bold;
     color: #333;
+    padding-bottom: 3px;
+    font-family: Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif; font-size: 1.25rem; font-style: normal; font-variant: normal; font-weight: 700; line-height: 26.4px; 
 }
 
 .card h2 {
