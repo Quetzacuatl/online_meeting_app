@@ -726,7 +726,7 @@ def attend_event(event_id):
 
     try:
         mail.send(msg)
-        flash("(check SPAM folder : A payment instruction email has been sent to your email address.", "success")
+        flash("(A payment instruction email has been sent to your email address. check spam folder", "success")
     except Exception as e:
         flash("Failed to send email. Please try again later.", "danger")
         print(f"Email sending failed: {e}")

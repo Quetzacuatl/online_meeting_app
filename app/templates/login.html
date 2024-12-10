@@ -19,6 +19,12 @@
                 <button type="submit" class="btn btn-success">Login</button>
             </div>
         </form>
+        <p>
+        <form method="POST">
+            <!-- Existing login form -->
+            <a href="{{ url_for('register') }}">Register here</a> | <a href="{{ url_for('reset_request') }}">Forgot Password?</a>
+        </form>
+        </p>
     </div>
 </div>
 {% endblock %}
