@@ -17,6 +17,17 @@
         <meta property="og:image" content="{{ url_for('static', filename='images/meeting-icon.png', _external=True) }}">
         <meta property="og:url" content="{{ request.url }}">
         <meta property="og:type" content="website">
+
+
+        <script async src="https://www.googletagmanager.com/gtag/js?id=YOUR_TRACKING_ID"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'YOUR_TRACKING_ID');
+        </script>
+
+        
     
         <!-- Structured Data for Schema.org -->
         {% if event %}
